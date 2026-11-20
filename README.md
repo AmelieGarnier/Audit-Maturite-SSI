@@ -92,7 +92,7 @@ Le moteur (`assets/js/calc.js`) reproduit à l'identique les résultats de la ma
 Il suffit de copier le dossier tel quel. Sans PHP, l'application passe automatiquement en **mode local** : les audits sont enregistrés dans le navigateur (`localStorage`). Pensez à les exporter en JSON pour les sauvegarder.
 
 ```text
-https://<utilisateur>.github.io/<depot>/ssi-audit/
+https://<utilisateur>.github.io/<depot>/
 ```
 
 ### 2. Serveur PHP (multi-postes, base SQLite)
