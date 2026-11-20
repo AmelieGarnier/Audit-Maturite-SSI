@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SSI Audit · Matrice de maturité ANSSI / CIS</title>
+  <meta name="description" content="Outil d'audit de maturité de la sécurité des systèmes d'information : guide d'hygiène ANSSI, guide CIS Télétravail, échelle COBIT 2019, plan d'action et KPI interactifs.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Aller au contenu</a>
+  <aside class="sidebar" aria-label="Navigation principale">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7z" fill="#1E5631"/><path d="m11 16 3.5 3.5L21.5 12" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><b>SSI Audit</b><span>Matrice de maturité</span></div>
+    </div>
+    <div class="current-audit">
+      <span id="audit-name">—</span>
+      <small id="audit-sub"></small>
+      <button class="link" id="btn-audits">Changer d'audit</button>
+    </div>
+    <nav id="nav"></nav>
+    <div class="side-foot">
+      <button class="btn block" id="btn-xlsx" data-need-audit>Exporter Excel</button>
+      <button class="btn block" id="btn-json" data-need-audit>Sauvegarder (.json)</button>
+      <button class="btn block ghost" id="btn-print" data-need-audit>Imprimer / PDF</button>
+      <a class="btn block ghost" id="btn-logout" href="login.php?logout=1" hidden>Se déconnecter</a>
+      <div class="status"><span id="mode-badge" class="mode"></span><span id="save-state" class="save" data-state="ok">Enregistré</span></div>
+    </div>
+  </aside>
+  <button class="menu-toggle" id="menu-toggle" aria-label="Menu">☰</button>
+  <div id="local-banner" class="local-banner" role="note" hidden>
+    <span class="lb-ico" aria-hidden="true">🔒</span>
+    <p><b>Mode démo : vos données restent dans votre navigateur.</b> Rien n'est envoyé sur Internet. Exportez vos audits en JSON pour les conserver (vider le cache les efface). N'utilisez pas de données réelles sensibles sur un poste partagé.</p>
+    <button class="icon-btn" id="lb-close" aria-label="Masquer ce message">✕</button>
+  </div>
+  <main id="main" class="main" tabindex="-1"><p class="loading">Chargement…</p></main>
+
+  <div id="scrim" class="scrim"></div>
+  <aside id="drawer" class="drawer" aria-hidden="true" aria-label="Fiche du point de contrôle"></aside>
+
+  <dialog id="modal" class="modal">
+    <div class="modal-head"><h2 id="modal-title"></h2></div>
+    <div id="modal-body" class="modal-body"></div>
+    <div id="modal-foot" class="modal-foot"></div>
+  </dialog>
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+  <noscript><p class="noscript">Cette application nécessite JavaScript.</p></noscript>
+  <script src="assets/vendor/chart.umd.min.js"></script>
+  <script src="assets/data/catalog.js"></script>
+  <script src="assets/data/demo-globalgreen.js"></script>
+  <script src="assets/data/questions.js"></script>
+  <script src="assets/js/calc.js"></script>
+  <script src="assets/js/qshared.js"></script>
+  <script src="assets/js/xlsx-lite.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

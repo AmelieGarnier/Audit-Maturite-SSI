@@ -1,0 +1,10 @@
+services:
+  ssi-audit:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ssi-data:/var/www/html/data
+    restart: unless-stopped
+volumes:
+  ssi-data:
