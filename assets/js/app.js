@@ -101,7 +101,7 @@
     var items = CAT.ANSSI.concat(CAT.CIS).map(CAT.newItem);
     return {
       id: uid('a'), version: 1,
-      meta: Object.assign({ organisation: '', secteur: '', effectif: '', dateAudit: today(), auditeur: '', classification: 'C2 · Diffusion restreinte', contexte: '', perimetre: '', referentiels: { ANSSI: true, CIS: true, SPEC: true }, demo: false, agregation: 'mediane' }, meta),
+      meta: Object.assign({ organisation: '', secteur: '', effectif: '', dateAudit: today(), auditeur: '', classification: 'Diffusion restreinte', contexte: '', perimetre: '', referentiels: { ANSSI: true, CIS: true, SPEC: true }, demo: false, agregation: 'mediane' }, meta),
       items: items, preuves: [], chantiers: [], jalons: [], kpis: clone(CAT.KPIS), releves: [],
       historique: [{ date: today(), version: '1.0', auteur: meta.auditeur || '', commentaire: 'Création de l\'audit' }],
       questionnaires: []
@@ -328,6 +328,19 @@
     if (type === 'textarea') return '<label>' + esc(label) + '<textarea data-bind="' + path + '" rows="3">' + esc(v) + '</textarea></label>';
     return '<label>' + esc(label) + '<input type="' + (type || 'text') + '" data-bind="' + path + '" value="' + esc(v) + '"' + (extra || '') + '></label>';
   }
+  // Classification : un niveau choisi dans une liste, plus une précision libre (« Confidentiel : diffusion limitée… »).
+  var CLASSIF = ['Public', 'Interne', 'Diffusion restreinte', 'Confidentiel', 'Secret'];
+  function splitClassif(v) {
+    v = String(v || ''); var i = v.indexOf(' : '), lvl = i >= 0 ? v.slice(0, i) : v, note = i >= 0 ? v.slice(i + 3) : '';
+    var key = slug(lvl), found = CLASSIF.filter(function (c) { return key.indexOf(slug(c)) >= 0; })[0];
+    if (!found && lvl) { found = ''; note = v; }
+    return { niveau: found || '', note: note };
+  }
+  function classifFields(v) {
+    var c = splitClassif(v);
+    return '<div class="cols2"><label>Classification<select data-classif="niveau">' + opts([['', '— à choisir']].concat(CLASSIF), c.niveau) + '</select></label>' +
+      '<label>Précision (diffusion, stockage…)<input data-classif="note" value="' + esc(c.note) + '" placeholder="ex. diffusion limitée aux destinataires"></label></div>';
+  }
   function viewOrganisation() {
     var a = state.audit, m = a.meta, refs = m.referentiels;
     main.innerHTML = head('Organisation', 'Identification du document, contexte, périmètre et référentiels de l\'audit.') +
@@ -336,8 +349,7 @@
       field('Effectif', 'meta.effectif') + field('Date de l\'audit', 'meta.dateAudit', 'date') + field('Auditeur', 'meta.auditeur') +
       '<div class="cols2">' + field('Référence du document', 'meta.reference') + field('Version', 'meta.versionDoc') + '</div>' +
       field('Destinataires', 'meta.destinataires') +
-      '<label>Classification<input data-bind="meta.classification" list="dl-classif" value="' + esc(m.classification) + '"></label>' +
-      '<datalist id="dl-classif"><option value="Public"><option value="Interne"><option value="Diffusion restreinte"><option value="Confidentiel"></datalist>' +
+      classifFields(m.classification) +
       '</div><div class="card form"><h2>Contexte et périmètre</h2>' + field('Organisation (présentation)', 'meta.contexte', 'textarea') +
       field('Implantation', 'meta.implantation', 'textarea') + field('Périmètre audité', 'meta.perimetre', 'textarea') + field('Acteurs', 'meta.acteurs', 'textarea') +
       field('Enjeux', 'meta.enjeux', 'textarea') + field('Documents de référence internes', 'meta.documents', 'textarea') +
@@ -721,7 +733,7 @@
       var b = function (k, label, rows) { return '<label>' + esc(label) + '<textarea data-bind="chantiers.' + i + '.' + k + '" rows="' + (rows || 2) + '">' + esc(c[k]) + '</textarea></label>'; };
       modal(c.id + ' · ' + c.titre, '<div class="form">' + (c.type === 'recurrent'
         ? '<label>Mois concernés (AAAA-MM, séparés par des virgules)<input data-mois="' + i + '" value="' + esc((c.mois || []).map(function (m) { return m.slice(0, 7); }).join(', ')) + '"></label>'
-        : b('mesures', 'Mesures couvertes') + b('actions', 'Actions clés', 3) + '<div class="cols2"><label>Échéance<input data-bind="chantiers.' + i + '.echeance" value="' + esc(c.echeance) + '"></label><label>Coût estimé<input data-bind="chantiers.' + i + '.cout" list="dl-cout" value="' + esc(c.cout) + '"></label></div><datalist id="dl-cout"><option value="Faible"><option value="Moyen"><option value="Élevé"></datalist>' +
+        : b('mesures', 'Mesures couvertes') + b('actions', 'Actions clés', 3) + '<div class="cols2"><label>Échéance<input data-bind="chantiers.' + i + '.echeance" value="' + esc(c.echeance) + '"></label><label>Coût estimé<select data-bind="chantiers.' + i + '.cout">' + opts([['', '—'], 'Faible', 'Moyen', 'Élevé'].concat(c.cout && ['Faible', 'Moyen', 'Élevé'].indexOf(c.cout) < 0 ? [c.cout] : []), c.cout || '') + '</select></label></div>' +
           b('indicateur', 'Indicateur de réussite') + b('justificatif', 'Justificatif / preuve de réalisation')) + '</div>',
         [{ label: 'Fermer', cls: 'primary', onClick: function () { render(); } }]);
     },
@@ -885,6 +897,15 @@
       markDirty();
     }
   });
+  function onClassif() {
+    if (!state.audit) return;
+    var n = $('[data-classif="niveau"]'), t = $('[data-classif="note"]'); if (!n || !t) return;
+    var note = t.value.trim();
+    state.audit.meta.classification = n.value && note ? n.value + ' : ' + note : (n.value || note);
+    markDirty();
+  }
+  document.addEventListener('change', function (e) { if (e.target.dataset && e.target.dataset.classif) onClassif(); });
+  document.addEventListener('input', function (e) { if (e.target.dataset && e.target.dataset.classif === 'note') onClassif(); });
   document.addEventListener('submit', function (e) {
     var f = e.target;
     e.preventDefault();
