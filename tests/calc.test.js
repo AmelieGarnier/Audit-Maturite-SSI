@@ -9,6 +9,11 @@ const C = require(path.join(root, 'assets', 'js', 'calc.js'));
 ['catalog-data.js', 'catalog.js', 'questions.js', 'demo-globalgreen.js'].forEach((f) => require(path.join(root, 'assets', 'data', f)));
 const attendu = require(path.join(__dirname, 'fixtures', 'globalgreen-attendu.json'));
 const demo = globalThis.SSI_DEMO;
+// La matrice v1.3 marque « Non » dans la colonne Retenue les mesures ANSSI 19, 26 et 27, retenues en réalité sous forme
+// allégée (corrigé dans la démo). Pour comparer aux valeurs calculées par Excel, on rétablit la colonne d'origine.
+const ALLEGEES = ['ANSSI-19', 'ANSSI-26', 'ANSSI-27'];
+const matrice = JSON.parse(JSON.stringify(demo));
+matrice.items.forEach((it) => { if (ALLEGEES.includes(it.id)) { it.retenue = false; it.allegee = false; } });
 
 let n = 0;
 function t(name, fn) { fn(); n++; console.log('ok', n, '-', name); }
@@ -55,8 +60,8 @@ t('catalogue : 42 mesures ANSSI et 20 recommandations CIS, avec une question cha
 });
 
 t('Global Green : 88 points de contrôle sur 88 identiques à la matrice Excel', () => {
-  assert.strictEqual(demo.items.length, 88);
-  demo.items.forEach((it) => {
+  assert.strictEqual(matrice.items.length, 88);
+  matrice.items.forEach((it) => {
     const r = C.compute(it), e = attendu.points[it.id];
     ['ecart', 'criticite', 'risqueInitial', 'risqueActuel', 'risqueApres'].forEach((k) => assert.strictEqual(r[k], e[k], `${it.id} ${k}`));
     assert.strictEqual(r.priorite, e.priorite, `${it.id} priorité`);
@@ -64,7 +69,7 @@ t('Global Green : 88 points de contrôle sur 88 identiques à la matrice Excel',
 });
 
 t('Global Green : indicateurs clés de la synthèse', () => {
-  const s = C.summary(demo), A = s.parSource.ANSSI, K = s.parSource.CIS, y = attendu.synthese;
+  const s = C.summary(matrice), A = s.parSource.ANSSI, K = s.parSource.CIS, y = attendu.synthese;
   const pair = (label, a, b) => { near(a, y[label][0], label + ' ANSSI'); near(b, y[label][1], label + ' CIS'); };
   pair('Mesures encadrées par une règle écrite (Oui)', A.regleOui, K.regleOui);
   pair('Niveau de capacité actuel moyen (COBIT /5)', A.niveau, K.niveau);
@@ -79,7 +84,7 @@ t('Global Green : indicateurs clés de la synthèse', () => {
 });
 
 t('Global Green : niveaux par domaine, par thème et par logiciel', () => {
-  const s = C.summary(demo), y = attendu.synthese;
+  const s = C.summary(matrice), y = attendu.synthese;
   let vus = 0;
   s.parDomaine.forEach((d) => {
     const e = y[d.domaine];
@@ -93,7 +98,7 @@ t('Global Green : niveaux par domaine, par thème et par logiciel', () => {
 });
 
 t('Global Green : évolution du risque, DICT et méthodes', () => {
-  const s = C.summary(demo), y = attendu.synthese;
+  const s = C.summary(matrice), y = attendu.synthese;
   ['Critique', 'Élevé', 'Moyen', 'Faible'].forEach((k) => {
     assert.deepStrictEqual([s.classesRisque.initial[k] || 0, s.classesRisque.actuel[k] || 0, s.classesRisque.apres[k] || 0], y[k], k);
   });
@@ -105,6 +110,17 @@ t('Global Green : évolution du risque, DICT et méthodes', () => {
   ['Examen documentaire', 'Entretien', 'Questionnaire', 'Observation', 'Test de contrôle', 'Échantillonnage', 'Analyse', 'Recalcul'].forEach((m) => {
     assert.deepStrictEqual(['ANSSI', 'CIS', 'SPEC'].map((src) => s.parSource[src].methodes[m] || 0), y[m], m);
   });
+});
+
+t('Global Green (démo corrigée) : ANSSI 19, 26 et 27 retenues sous forme allégée', () => {
+  ALLEGEES.forEach((id) => {
+    const it = demo.items.find((x) => x.id === id), r = C.compute(it);
+    assert.ok(it.retenue && it.allegee, id);
+    assert.deepStrictEqual([r.ecart, r.criticite, r.priorite], [3, 6, 'P3'], id);
+  });
+  const A = C.summary(demo).parSource.ANSSI;
+  assert.deepStrictEqual([A.retenus, A.nonRetenus, A.P1, A.P2, A.P3, A.niveau0], [40, 2, 5, 16, 19, 34]);
+  near(A.niveau, 6 / 40, 'niveau moyen ANSSI');
 });
 
 t('atteinte des KPI', () => {

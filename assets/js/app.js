@@ -149,8 +149,8 @@
   function freshDemo() { return normalize(clone(window.SSI_DEMO)); }
   function openAudit(id) {
     return S.get(id).then(function (a) {
-      // Ancienne démonstration (données fictives antérieures) : remplacée par l'audit Global Green réel.
-      if (a && a.id === 'demo-globalgreen' && a.meta && a.meta.demo && !a.meta.reference && window.SSI_DEMO) { a = freshDemo(); S.save(a); }
+      // Démonstration enregistrée par une version antérieure de l'application : remplacée par la version actuelle.
+      if (a && a.id === 'demo-globalgreen' && a.meta && a.meta.demo && window.SSI_DEMO && a.meta.demoVersion !== window.SSI_DEMO.meta.demoVersion) { a = freshDemo(); S.save(a); toast('Démonstration Global Green mise à jour.'); }
       state.audit = normalize(a); state.filters = {};
       S.prefs.set('current', a.id);
       updateChrome();
