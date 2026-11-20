@@ -271,13 +271,13 @@
       '</section>';
 
     var dom = s.parDomaine;
-    var labels = dom.map(function (d) { return (d.src === 'ANSSI' ? '' : d.src + ' · ') + d.domaine; });
+    var labels = dom.map(function (d) { return (d.src === 'ANSSI' ? '' : SRC_LABEL[d.src] + ' · ') + d.domaine; });
     chart('ch-radar', {
       type: 'radar',
       data: { labels: labels, datasets: [
         { label: 'Niveau constaté', data: dom.map(function (d) { return d.niveau; }), borderColor: COLORS.orange, backgroundColor: 'rgba(224,122,31,.18)', pointRadius: 3 },
         { label: 'Niveau actuel', data: dom.map(function (d) { return d.courant; }), borderColor: COLORS.blue, backgroundColor: 'rgba(47,102,144,.10)', pointRadius: 3 },
-        { label: 'Cible', data: dom.map(function (d) { return d.cible; }), borderColor: COLORS.green, backgroundColor: 'rgba(30,86,49,.06)', borderDash: [5, 4], pointRadius: 2 }
+        { label: 'Cible', data: dom.map(function (d) { return d.cible; }), borderColor: COLORS.green2, backgroundColor: 'rgba(30,86,49,.06)', borderDash: [5, 4], pointRadius: 2 }
       ] },
       options: { maintainAspectRatio: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, backdropColor: 'transparent' }, pointLabels: { font: { size: 10 } } } },
         onClick: function (e, els) { if (els.length) go('matrice', { domaine: dom[els[0].index].domaine, src: dom[els[0].index].src }); } }
@@ -317,7 +317,7 @@
     });
     chart('ch-traj', {
       type: 'line',
-      data: { labels: ['Audit initial', 'Aujourd\'hui', 'Après plan'], datasets: [{ label: 'Maturité moyenne', data: [s.maturite, s.maturiteCourante, s.cibleMoyenne], borderColor: COLORS.green, backgroundColor: 'rgba(30,86,49,.12)', fill: true, tension: 0.25 }] },
+      data: { labels: ['Audit initial', 'Aujourd\'hui', 'Après plan'], datasets: [{ label: 'Maturité moyenne', data: [s.maturite, s.maturiteCourante, s.cibleMoyenne], borderColor: COLORS.green2, backgroundColor: 'rgba(76,154,42,.15)', fill: true, tension: 0.25 }] },
       options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 5 } } }
     });
   }
@@ -906,7 +906,10 @@
 
   if (window.Chart) {
     window.Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
-    window.Chart.defaults.color = '#4A5560';
+    var cs = getComputedStyle(document.documentElement);
+    window.Chart.defaults.color = cs.getPropertyValue('--ink-2').trim() || '#4A5560';
+    window.Chart.defaults.borderColor = cs.getPropertyValue('--grid').trim() || 'rgba(0,0,0,.08)';
+    if (window.Chart.defaults.scales && window.Chart.defaults.scales.radialLinear) window.Chart.defaults.scales.radialLinear.ticks.color = window.Chart.defaults.color;
   }
 
   // ---------- Démarrage ----------

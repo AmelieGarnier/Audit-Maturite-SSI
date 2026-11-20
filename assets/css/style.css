@@ -5,11 +5,20 @@
   --red: #B3261E; --orange: #E07A1F; --yellow: #D4A017; --blue: #2F6690;
   --radius: 10px; --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
   --side: 248px;
+  --bar: #CFE3D3; --bar-ink: #1D2329; --bar-rec-1: #D5E3EF; --bar-rec-2: #E7EFF6;
+  --banner-bg: #FFF6E0; --banner-ink: #5A4300; --banner-line: #F0D58A; --warn-bg: #FCE8C8; --warn-ink: #7A4100;
+  --grid: rgba(0,0,0,.08);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: var(--ink); font-size: 14px; line-height: 1.45;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --ink: #E6EAED; --ink-2: #B9C2CA; --muted: #8F9AA4; --line: #2D363E; --bg: #12171B; --card: #1A2126; --green-soft: #1C2E22; }
+  :root { --ink: #E6EAED; --ink-2: #B9C2CA; --muted: #8F9AA4; --line: #2D363E; --bg: #12171B; --card: #1A2126; --green-soft: #1C2E22;
+    --bar: #2E4A37; --bar-ink: #E6EAED; --bar-rec-1: #23384A; --bar-rec-2: #2C4558;
+    --banner-bg: #3A2F12; --banner-ink: #F3DFA6; --banner-line: #5C4A1C; --warn-bg: #4A3416; --warn-ink: #F6C98E;
+    --grid: rgba(255,255,255,.10); }
+  #nav a.active { background: #E8F1EA; }
+  a { color: #7CC35A; }
+  .link { color: #7CC35A; }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -70,7 +79,7 @@ code { background: var(--green-soft); padding: 0 .3em; border-radius: 4px; }
 .save[data-state=err] { color: #FFB4AB; }
 .menu-toggle { display: none; }
 .main { margin-left: var(--side); padding: 1.5rem 2rem 3rem; min-height: 100vh; outline: none; max-width: calc(1500px + var(--side)); }
-.local-banner { margin-left: var(--side); display: flex; gap: .8rem; align-items: center; background: #FFF6E0; color: #5A4300; border-bottom: 1px solid #F0D58A; padding: .55rem 2rem; }
+.local-banner { margin-left: var(--side); display: flex; gap: .8rem; align-items: center; background: var(--banner-bg); color: var(--banner-ink); border-bottom: 1px solid var(--banner-line); padding: .55rem 2rem; }
 .local-banner p { margin: 0; flex: 1; font-size: .88rem; }
 .local-banner[hidden] { display: none; }
 
@@ -126,7 +135,7 @@ code { background: var(--green-soft); padding: 0 .3em; border-radius: 4px; }
 .b-non-retenue { background: #BFBFBF; color: #404040; }
 .b-s-en-cours { background: var(--blue); color: #fff; }
 .b-demo, .b-auto { background: var(--green-soft); color: var(--green-2); }
-.b-warn { background: #FCE8C8; color: #7A4100; }
+.b-warn { background: var(--warn-bg); color: var(--warn-ink); }
 .b-muted { background: var(--line); color: var(--muted); }
 .lvl { display: inline-flex; width: 1.6rem; height: 1.6rem; align-items: center; justify-content: center; border-radius: 6px; font-weight: 700; color: #fff; }
 .lvl.l0 { background: #B3261E; } .lvl.l1 { background: #E07A1F; } .lvl.l2 { background: #D4A017; }
@@ -177,10 +186,10 @@ ul.plain li { padding: .2rem 0; }
 .g-track { position: relative; min-height: 44px; background-image: linear-gradient(to right, var(--line) 1px, transparent 1px); }
 .g-scale .g-track { min-height: 26px; }
 .g-scale span { position: absolute; top: 4px; font-size: .72rem; color: var(--muted); padding-left: 3px; text-transform: capitalize; }
-.g-bar { position: absolute; top: 10px; height: 24px; background: #CFE3D3; border-radius: 6px; overflow: hidden; }
+.g-bar { position: absolute; top: 10px; height: 24px; background: var(--bar); border-radius: 6px; overflow: hidden; }
 .g-bar i { display: block; height: 100%; background: var(--green-2); }
-.g-bar span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 700; color: var(--ink); }
-.g-bar.rec { background: repeating-linear-gradient(45deg, #D5E3EF, #D5E3EF 6px, #E7EFF6 6px, #E7EFF6 12px); }
+.g-bar span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 700; color: var(--bar-ink); }
+.g-bar.rec { background: repeating-linear-gradient(45deg, var(--bar-rec-1), var(--bar-rec-1) 6px, var(--bar-rec-2) 6px, var(--bar-rec-2) 12px); }
 .g-bar.rec i { background: var(--blue); }
 .g-dot { position: absolute; top: 12px; transform: translateX(-50%); color: var(--blue); font-size: 1rem; }
 .lg-dot { color: var(--blue); }
