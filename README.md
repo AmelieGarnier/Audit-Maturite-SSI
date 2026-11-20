@@ -3,7 +3,7 @@
 Outil web d'**audit de maturité de la sécurité des systèmes d'information** pour TPE et PME. Il s'appuie sur :
 
 - le **guide d'hygiène informatique de l'ANSSI** (42 mesures) ;
-- le guide **CIS Telework and Small Office Network Security** (20 recommandations) ;
+- le guide **CIS Telework and Small Office Network Security** v8.1 (20 recommandations : box, routeur et réseau du bureau ou du domicile) ;
 - l'**échelle de capacité COBIT 2019** (niveaux 0 à 5).
 
 Il produit l'évaluation, le plan d'action, le registre des preuves et des indicateurs de suivi, le tout avec des graphiques interactifs.
@@ -25,7 +25,7 @@ Il produit l'évaluation, le plan d'action, le registre des preuves et des indic
 | **Plan d'action** | Chantiers reliés aux mesures, diagramme de Gantt (chantiers, activités récurrentes, jalons), avancement, actions triées par criticité |
 | **Preuves** | Registre PR-xx avec statut de collecte et renvoi vers les points de contrôle qui les citent |
 | **KPI** | Indicateurs manuels avec historique des mesures, et indicateurs calculés automatiquement à partir de la matrice. Graphiques d'atteinte des cibles et d'évolution |
-| **Exports** | Classeur Excel multi-onglets (généré sans dépendance), JSON, impression et PDF |
+| **Exports** | Classeur Excel au format de la matrice d'audit (Présentation, Méthode, Audit ANSSI, Audit CIS Télétravail, Audit logiciels, Registre des preuves, Éléments non retenus, Synthèse, Plan d'action, Plan de déploiement, Indicateurs), avec les formules de calcul, les listes déroulantes et la mise en forme ; JSON, impression et PDF |
 
 Le **catalogue** chargé à la création d'un audit comprend les 42 mesures ANSSI et les 20 recommandations CIS, avec pour chacune la question d'audit, les attendus, la méthode de vérification, l'indicateur et une cible suggérée. On peut y ajouter ses propres contrôles, par exemple les logiciels métier.
 
@@ -84,7 +84,7 @@ L'agrégation se fait au choix par **médiane** (par défaut), **minimum** (prud
 | Risque actuel | Recalculé avec le niveau atteint lorsque l'action est réalisée |
 | Risque après plan | Calculé avec la cible ; il ne descend jamais à zéro |
 
-Le moteur (`assets/js/calc.js`) reproduit à l'identique les résultats de la matrice Excel d'origine : 88 points de contrôle sur 88 vérifiés.
+Le moteur (`assets/js/calc.js`) reproduit à l'identique les résultats de la matrice Excel d'origine : 88 points de contrôle sur 88 vérifiés, ainsi que les indicateurs de l'onglet Synthèse (`node tests/calc.test.js`). Une mesure non retenue n'a ni écart ni priorité et sort des moyennes, mais son risque reste coté. Le risque résiduel actuel n'est recalculé que lorsque « Action réalisée » est cochée.
 
 ## Déploiement
 
@@ -170,11 +170,14 @@ ssi-audit/
 │   ├── js/questionnaire.js Page du répondant
 │   ├── data/questions.js   Questions en langage courant et échelle de réponse
 │   ├── js/xlsx-lite.js     Générateur .xlsx autonome (ZIP + OOXML)
-│   ├── data/catalog.js     Catalogue ANSSI / CIS et KPI par défaut
+│   ├── data/catalog-data.js  Mesures ANSSI / CIS (question, attendus, méthode, indicateur, gravité, cible, DICT)
+│   ├── data/catalog.js     Listes de valeurs, KPI par défaut, création d'un point de contrôle
+│   ├── js/export-xlsx.js   Export Excel au format de la matrice d'audit
 │   ├── data/demo-globalgreen.js  Jeu de démonstration
 │   └── vendor/chart.umd.min.js   Chart.js 4 (licence MIT)
 ├── data/                   Base SQLite (créée automatiquement)
 ├── tests/calc.test.js      Tests du moteur (node tests/calc.test.js)
+├── tests/fixtures/         Valeurs de référence calculées par la matrice Excel Global Green
 ├── Dockerfile, docker-compose.yml
 └── docs/captures/
 ```

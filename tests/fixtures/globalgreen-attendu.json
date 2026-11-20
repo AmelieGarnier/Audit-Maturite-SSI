@@ -1,0 +1,980 @@
+{
+ "points": {
+  "ANSSI-01": {
+   "ecart": 2,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 9,
+   "risqueActuel": 9,
+   "risqueApres": 3
+  },
+  "ANSSI-02": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-03": {
+   "ecart": 3,
+   "criticite": 12,
+   "priorite": "P1",
+   "risqueInitial": 16,
+   "risqueActuel": 16,
+   "risqueApres": 4
+  },
+  "ANSSI-04": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-05": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-06": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-07": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-08": {
+   "ecart": 2,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 9,
+   "risqueActuel": 9,
+   "risqueApres": 3
+  },
+  "ANSSI-09": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-10": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-11": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-12": {
+   "ecart": 4,
+   "criticite": 16,
+   "priorite": "P1",
+   "risqueInitial": 16,
+   "risqueActuel": 16,
+   "risqueApres": 4
+  },
+  "ANSSI-13": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-14": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-15": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-16": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-17": {
+   "ecart": 2,
+   "criticite": 4,
+   "priorite": "P3",
+   "risqueInitial": 6,
+   "risqueActuel": 6,
+   "risqueApres": 2
+  },
+  "ANSSI-18": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-19": {
+   "ecart": null,
+   "criticite": null,
+   "priorite": "Non retenue",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-20": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-21": {
+   "ecart": 2,
+   "criticite": 4,
+   "priorite": "P3",
+   "risqueInitial": 6,
+   "risqueActuel": 6,
+   "risqueApres": 2
+  },
+  "ANSSI-22": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-23": {
+   "ecart": 4,
+   "criticite": 16,
+   "priorite": "P1",
+   "risqueInitial": 16,
+   "risqueActuel": 16,
+   "risqueApres": 4
+  },
+  "ANSSI-24": {
+   "ecart": 4,
+   "criticite": 16,
+   "priorite": "P1",
+   "risqueInitial": 16,
+   "risqueActuel": 16,
+   "risqueApres": 4
+  },
+  "ANSSI-25": {
+   "ecart": null,
+   "criticite": null,
+   "priorite": "Non retenue",
+   "risqueInitial": 1,
+   "risqueActuel": 1,
+   "risqueApres": 1
+  },
+  "ANSSI-26": {
+   "ecart": null,
+   "criticite": null,
+   "priorite": "Non retenue",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-27": {
+   "ecart": null,
+   "criticite": null,
+   "priorite": "Non retenue",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-28": {
+   "ecart": null,
+   "criticite": null,
+   "priorite": "Non retenue",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 4
+  },
+  "ANSSI-29": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-30": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-31": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-32": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-33": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-34": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-35": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-36": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-37": {
+   "ecart": 3,
+   "criticite": 12,
+   "priorite": "P1",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 4
+  },
+  "ANSSI-38": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-39": {
+   "ecart": 2,
+   "criticite": 4,
+   "priorite": "P3",
+   "risqueInitial": 6,
+   "risqueActuel": 6,
+   "risqueApres": 2
+  },
+  "ANSSI-40": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "ANSSI-41": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "ANSSI-42": {
+   "ecart": 2,
+   "criticite": 4,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 4
+  },
+  "CIS-C01": {
+   "ecart": 3,
+   "criticite": 3,
+   "priorite": "P3",
+   "risqueInitial": 4,
+   "risqueActuel": 4,
+   "risqueApres": 1
+  },
+  "CIS-C02": {
+   "ecart": 4,
+   "criticite": 16,
+   "priorite": "P1",
+   "risqueInitial": 16,
+   "risqueActuel": 16,
+   "risqueApres": 4
+  },
+  "CIS-C03": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "CIS-C04": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "CIS-C05": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "CIS-C06": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "CIS-C07": {
+   "ecart": 2,
+   "criticite": 2,
+   "priorite": "P3",
+   "risqueInitial": 3,
+   "risqueActuel": 3,
+   "risqueApres": 1
+  },
+  "CIS-C08": {
+   "ecart": 2,
+   "criticite": 2,
+   "priorite": "P3",
+   "risqueInitial": 4,
+   "risqueActuel": 4,
+   "risqueApres": 2
+  },
+  "CIS-C09": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "CIS-C10": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "CIS-C11": {
+   "ecart": 2,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 9,
+   "risqueActuel": 9,
+   "risqueApres": 3
+  },
+  "CIS-C12": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "CIS-C13": {
+   "ecart": 2,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 9,
+   "risqueActuel": 9,
+   "risqueApres": 3
+  },
+  "CIS-C14": {
+   "ecart": 1,
+   "criticite": 1,
+   "priorite": "P3",
+   "risqueInitial": 2,
+   "risqueActuel": 2,
+   "risqueApres": 1
+  },
+  "CIS-C15": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "CIS-C16": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "CIS-C17": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "CIS-C18": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "CIS-C19": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "CIS-C20": {
+   "ecart": null,
+   "criticite": null,
+   "priorite": "Non retenue",
+   "risqueInitial": 4,
+   "risqueActuel": 4,
+   "risqueApres": 2
+  },
+  "L-EBP-01": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-EBP-02": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-EBP-03": {
+   "ecart": 3,
+   "criticite": 12,
+   "priorite": "P1",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 4
+  },
+  "L-EBP-04": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "L-EBP-05": {
+   "ecart": 2,
+   "criticite": 4,
+   "priorite": "P3",
+   "risqueInitial": 6,
+   "risqueActuel": 6,
+   "risqueApres": 2
+  },
+  "L-EBP-06": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "L-EBP-07": {
+   "ecart": 2,
+   "criticite": 4,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 4
+  },
+  "L-CRM-01": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-CRM-02": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-CRM-03": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-CRM-04": {
+   "ecart": 4,
+   "criticite": 16,
+   "priorite": "P1",
+   "risqueInitial": 16,
+   "risqueActuel": 16,
+   "risqueApres": 4
+  },
+  "L-CRM-05": {
+   "ecart": 2,
+   "criticite": 4,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 4
+  },
+  "L-CRM-06": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-XLS-01": {
+   "ecart": 2,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 9,
+   "risqueActuel": 9,
+   "risqueApres": 3
+  },
+  "L-XLS-02": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-XLS-03": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-XLS-04": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "L-MSG-01": {
+   "ecart": 4,
+   "criticite": 16,
+   "priorite": "P1",
+   "risqueInitial": 16,
+   "risqueActuel": 16,
+   "risqueApres": 4
+  },
+  "L-MSG-02": {
+   "ecart": 4,
+   "criticite": 16,
+   "priorite": "P1",
+   "risqueInitial": 16,
+   "risqueActuel": 16,
+   "risqueApres": 4
+  },
+  "L-MSG-03": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "L-TAZ-01": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-TAZ-02": {
+   "ecart": 3,
+   "criticite": 6,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 2
+  },
+  "L-WIN-01": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-SAAS-01": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-SAAS-02": {
+   "ecart": 3,
+   "criticite": 9,
+   "priorite": "P2",
+   "risqueInitial": 12,
+   "risqueActuel": 12,
+   "risqueApres": 3
+  },
+  "L-SAAS-03": {
+   "ecart": 2,
+   "criticite": 4,
+   "priorite": "P3",
+   "risqueInitial": 8,
+   "risqueActuel": 8,
+   "risqueApres": 4
+  }
+ },
+ "synthese": {
+  "Mesures encadrées par une règle écrite (Oui)": [
+   35,
+   15,
+   50
+  ],
+  "Niveau de capacité actuel moyen (COBIT /5)": [
+   0.16216216216216217,
+   0.2631578947368421,
+   0.21266002844950213
+  ],
+  "Niveau cible moyen (COBIT /5)": [
+   3.081081081081081,
+   3,
+   3.0405405405405403
+  ],
+  "Taux d'atteinte de la cible (actuel / cible)": [
+   0.052631578947368425,
+   0.08771929824561403,
+   0.06994152046783626
+  ],
+  "Mesures au niveau 0 (Incomplet)": [
+   31,
+   15,
+   46
+  ],
+  "Priorités P1 (critiques)": [
+   5,
+   1,
+   6
+  ],
+  "Priorités P2 (importantes)": [
+   16,
+   5,
+   21
+  ],
+  "Priorités P3 (à planifier)": [
+   16,
+   13,
+   29
+  ],
+  "Mesures au niveau cible (OK)": [
+   0,
+   0,
+   0
+  ],
+  "I - Sensibiliser et former": [
+   3,
+   0.3333333333333333,
+   3
+  ],
+  "II - Connaître le système d'information": [
+   4,
+   0,
+   3
+  ],
+  "III - Authentifier et contrôler les accès": [
+   6,
+   0.16666666666666666,
+   3.1666666666666665
+  ],
+  "IV - Sécuriser les postes": [
+   5,
+   0.2,
+   3
+  ],
+  "V - Sécuriser le réseau": [
+   5,
+   0.2,
+   3.4
+  ],
+  "VI - Sécuriser l'administration": [
+   1,
+   0,
+   3
+  ],
+  "VII - Gérer le nomadisme": [
+   4,
+   0,
+   3
+  ],
+  "VIII - Maintenir à jour le système d'information": [
+   2,
+   0,
+   3
+  ],
+  "IX - Superviser, auditer, réagir": [
+   5,
+   0.4,
+   3.2
+  ],
+  "X - Pour aller plus loin": [
+   2,
+   0,
+   2.5
+  ],
+  "Achat de l'équipement": [
+   1,
+   0,
+   3
+  ],
+  "Configuration de l'équipement": [
+   3,
+   0,
+   3.3333333333333335
+  ],
+  "Configuration du réseau": [
+   6,
+   0.16666666666666666,
+   2.8333333333333335
+  ],
+  "Chiffrement du trafic": [
+   2,
+   0.5,
+   3
+  ],
+  "Configuration avancée": [
+   6,
+   0.5,
+   3
+  ],
+  "Fin de vie": [
+   1,
+   0,
+   3
+  ],
+  "Audit ANSSI": [
+   37,
+   0,
+   0
+  ],
+  "Audit CIS Télétravail": [
+   19,
+   0,
+   0
+  ],
+  "Audit logiciels": [
+   26,
+   0,
+   0
+  ],
+  "Total": [
+   82,
+   0,
+   0
+  ],
+  "Critique": [
+   43,
+   43,
+   0
+  ],
+  "Élevé": [
+   35,
+   35,
+   0
+  ],
+  "Moyen": [
+   7,
+   7,
+   15
+  ],
+  "Faible": [
+   3,
+   3,
+   73
+  ],
+  "Total des points évalués": [
+   88,
+   88,
+   88
+  ],
+  "Score de risque moyen (gravité × vraisemblance, /16)": [
+   9.943181818181818,
+   9.943181818181818,
+   2.727272727272727
+  ],
+  "EBP (facturation, comptabilité, paie)": [
+   7,
+   0.2857142857142857,
+   3
+  ],
+  "CRM (produit grand public)": [
+   6,
+   0,
+   3
+  ],
+  "Excel : fichier de référence et macro CSV": [
+   4,
+   0.25,
+   3
+  ],
+  "Messagerie (fournisseur à identifier)": [
+   3,
+   0,
+   3.6666666666666665
+  ],
+  "TerreAzur (plateforme partenaire)": [
+   2,
+   0,
+   3
+  ],
+  "Windows (postes de travail)": [
+   1,
+   0,
+   3
+  ],
+  "Futur progiciel SaaS (ESN)": [
+   3,
+   0,
+   2.6666666666666665
+  ],
+  "D : Disponibilité": [
+   17,
+   5,
+   0.136363636363636
+  ],
+  "I : Intégrité": [
+   31,
+   9,
+   0.15
+  ],
+  "C : Confidentialité": [
+   35,
+   18,
+   0.188679245283019
+  ],
+  "T : Traçabilité (preuve)": [
+   11,
+   1,
+   0.166666666666667
+  ],
+  "Examen documentaire": [
+   25,
+   16,
+   6
+  ],
+  "Entretien": [
+   11,
+   2,
+   5
+  ],
+  "Questionnaire": [
+   2,
+   0,
+   0
+  ],
+  "Observation": [
+   6,
+   3,
+   2
+  ],
+  "Test de contrôle": [
+   13,
+   4,
+   9
+  ],
+  "Échantillonnage": [
+   7,
+   0,
+   4
+  ],
+  "Analyse": [
+   15,
+   3,
+   16
+  ],
+  "Recalcul": [
+   6,
+   0,
+   0
+  ]
+ }
+}

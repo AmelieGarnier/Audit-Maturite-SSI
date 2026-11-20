@@ -11,11 +11,20 @@
     ['questionnaire', 'Questionnaire', '✎'], ['matrice', 'Matrice d\'audit', '▦'], ['plan', 'Plan d\'action', '☰'],
     ['preuves', 'Preuves', '❐'], ['kpi', 'KPI', '↗']
   ];
-  var DECISIONS = ['Non évalué', 'Conforme', 'Partiel', 'Non conforme', 'Non retenue'];
-  var METHODES = ['Entretien', 'Documentaire', 'Technique', 'Observation', 'Questionnaire'];
-  var FIABILITES = ['', 'Présomption', 'Déclaratif', 'Vérifié'];
-  var STATUTS = ['À faire', 'En cours', 'Réalisé', 'Abandonné'];
-  var STATUTS_PREUVE = ['À collecter', 'Reçue', 'Validée', 'Refusée'];
+  var LISTES = CAT.LISTES;
+  var METHODES = LISTES.methodes;
+  var FIABILITES = [''].concat(LISTES.fiabilite);
+  var REGLES = [''].concat(LISTES.regleEcrite);
+  var STATUTS = LISTES.statut;
+  var STATUTS_PREUVE = LISTES.statutPreuve;
+  var SRC_LABEL = { ANSSI: 'ANSSI', CIS: 'CIS', SPEC: 'Logiciels' };
+  // Champs d'analyse d'un point de contrôle (identiques aux colonnes de la matrice).
+  var ANALYSE = [['constat', 'Constat (situation observée)', 4], ['causes', 'Causes identifiées', 2], ['consequences', 'Conséquences possibles', 2],
+    ['pointsForts', 'Points forts constatés', 2], ['couverture', 'Couverture documentaire', 2], ['preuvesComplementaires', 'Preuves complémentaires à collecter', 2],
+    ['analyseCobit', 'Analyse du niveau attribué (COBIT)', 2]];
+  var NON_RETENU = [['partieNonRetenue', 'Partie non retenue'], ['justificationDetaillee', 'Justification détaillée'], ['risqueAssocie', 'Risque associé'],
+    ['mesureCompensatoire', 'Mesure compensatoire'], ['risqueResiduelAccepte', 'Risque résiduel accepté'], ['acceptePar', 'Accepté par'],
+    ['conditionsReevaluation', 'Conditions de réévaluation ou d\'évolution'], ['prochaineReevaluation', 'Prochaine réévaluation']];
   var COLORS = { green: '#1E5631', green2: '#4C9A2A', light: '#A4DE02', blue: '#2F6690', orange: '#E07A1F', red: '#B3261E', yellow: '#D4A017', grey: '#8A8F98' };
   var RISK_COLORS = { 'Critique': COLORS.red, 'Élevé': COLORS.orange, 'Moyen': COLORS.yellow, 'Faible': COLORS.green2 };
   var PRIO_COLORS = { P1: COLORS.red, P2: COLORS.orange, P3: COLORS.yellow, OK: COLORS.green2 };
@@ -40,7 +49,7 @@
     return opts(l, cur === null || cur === undefined ? '' : String(cur));
   }
   function badge(text, cls) { return text ? '<span class="badge ' + esc(cls || '') + '">' + esc(text) + '</span>' : '<span class="muted">—</span>'; }
-  function prioBadge(p) { return p ? badge(p, 'b-' + p.toLowerCase()) : badge(''); }
+  function prioBadge(p) { return p ? badge(p, 'b-' + slug(p)) : badge(''); }
   function riskBadge(score) { var n = C.niveauRisque(score); return score === null || score === undefined ? badge('') : '<span class="badge b-r-' + esc(slug(n)) + '">' + score + ' · ' + esc(n) + '</span>'; }
   function slug(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
   function download(name, blob) {
@@ -102,9 +111,16 @@
     ['items', 'preuves', 'chantiers', 'jalons', 'kpis', 'releves', 'historique', 'questionnaires'].forEach(function (k) { if (!Array.isArray(a[k])) a[k] = []; });
     a.meta = a.meta || {};
     a.meta.referentiels = a.meta.referentiels || { ANSSI: true, CIS: true, SPEC: true };
-    a.items.forEach(function (it) { it.methodes = it.methodes || []; it.preuves = it.preuves || []; it.dict = it.dict || {}; });
+    if (!a.kpis.length) a.kpis = clone(CAT.KPIS);
+    a.items.forEach(function (it) {
+      it.methodes = it.methodes || []; it.preuves = it.preuves || []; it.dict = it.dict || {};
+      if (it.statutAction === 'Réalisé') { it.statutAction = 'Fait'; it.actionRealisee = true; }
+      if (it.actionRealisee === undefined) it.actionRealisee = false;
+      if (it.avancement === undefined) it.avancement = 0;
+    });
     return a;
   }
+  function refLabel(it) { return it.src === 'SPEC' ? it.id : it.src + ' ' + (it.ref || it.num); }
   function validateAudit(a) {
     if (!a || typeof a !== 'object' || !a.meta || !Array.isArray(a.items)) return 'Ce fichier n\'est pas un audit SSI Audit.';
     if (!String(a.meta.organisation || '').trim()) return 'Le nom de l\'organisation est absent.';
@@ -130,8 +146,11 @@
       .catch(function (e) { s.dataset.state = 'err'; s.textContent = 'Échec de l\'enregistrement'; toast(e.message, 'err'); });
   }
 
+  function freshDemo() { return normalize(clone(window.SSI_DEMO)); }
   function openAudit(id) {
     return S.get(id).then(function (a) {
+      // Ancienne démonstration (données fictives antérieures) : remplacée par l'audit Global Green réel.
+      if (a && a.id === 'demo-globalgreen' && a.meta && a.meta.demo && !a.meta.reference && window.SSI_DEMO) { a = freshDemo(); S.save(a); }
       state.audit = normalize(a); state.filters = {};
       S.prefs.set('current', a.id);
       updateChrome();
@@ -219,10 +238,10 @@
   function viewTableau() {
     var a = state.audit, s = C.summary(a);
     var tiles = [
-      ['Maturité moyenne', fmt(s.maturite, 2) + ' <small>/ 5</small>', 'Cible moyenne ' + fmt(s.cibleMoyenne, 2) + ' · actuelle ' + fmt(s.maturiteCourante, 2)],
+      ['Maturité moyenne', fmt(s.maturite, 2) + ' <small>/ 5</small>', ['ANSSI', 'CIS', 'SPEC'].filter(function (k) { return s.parSource[k] && s.parSource[k].niveau !== null; }).map(function (k) { return SRC_LABEL[k] + ' ' + fmt(s.parSource[k].niveau, 2); }).join(' · ') + ' · cible ' + fmt(s.cibleMoyenne, 2)],
       ['Points à la cible', fmt(s.conformite) + ' <small>%</small>', s.evalues + ' évalués sur ' + s.retenus + ' retenus'],
       ['Écarts P1', String(s.priorites.P1), 'P2 : ' + s.priorites.P2 + ' · P3 : ' + s.priorites.P3],
-      ['Risque cumulé', s.risque.initial + ' → ' + s.risque.actuel, 'Après plan : ' + s.risque.apres],
+      ['Score de risque moyen', fmt(s.risque.points ? s.risque.initial / s.risque.points : null, 2) + ' <small>/ 16</small>', 'Actuel ' + fmt(s.risque.points ? s.risque.actuel / s.risque.points : null, 2) + ' · après plan ' + fmt(s.risque.points ? s.risque.apres / s.risque.points : null, 2)],
       ['Actions réalisées', fmt(s.actions.taux) + ' <small>%</small>', s.actions.realisees + ' sur ' + s.actions.total]
     ];
     var heat = '<table class="heat"><caption>Gravité × vraisemblance (nombre de points)</caption><thead><tr><th></th>' + [1, 2, 3, 4].map(function (v) { return '<th>V' + v + '</th>'; }).join('') + '</tr></thead><tbody>';
@@ -287,7 +306,7 @@
     var dk = ['D', 'I', 'C', 'T'], dl = ['Disponibilité', 'Intégrité', 'Confidentialité', 'Traçabilité'];
     chart('ch-dict', {
       type: 'bar',
-      data: { labels: dl, datasets: [{ label: 'Maturité moyenne', data: dk.map(function (k) { return s.dict[k]; }), backgroundColor: [COLORS.blue, COLORS.green2, COLORS.green, COLORS.orange] }] },
+      data: { labels: dl, datasets: [{ label: 'Maturité moyenne', data: dk.map(function (k) { return s.dict[k].niveau === null ? null : C.round(s.dict[k].niveau, 2); }), backgroundColor: [COLORS.blue, COLORS.green2, COLORS.green, COLORS.orange] }] },
       options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 5 } }, onClick: function (e, els) { if (els.length) go('matrice', { dict: dk[els[0].index] }); } }
     });
     var mk = Object.keys(s.methodes);
@@ -311,39 +330,46 @@
   }
   function viewOrganisation() {
     var a = state.audit, m = a.meta, refs = m.referentiels;
-    main.innerHTML = head('Organisation', 'Identification, contexte, périmètre et référentiels de l\'audit.') +
+    main.innerHTML = head('Organisation', 'Identification du document, contexte, périmètre et référentiels de l\'audit.') +
       '<section class="grid2"><div class="card form">' +
-      '<h2>Identification</h2>' + field('Organisation *', 'meta.organisation', 'text', ' required maxlength="200"') + field('Secteur d\'activité', 'meta.secteur') + field('Effectif et implantations', 'meta.effectif') +
-      field('Date de l\'audit', 'meta.dateAudit', 'date') + field('Auditeur', 'meta.auditeur') +
-      '<label>Classification du rapport<select data-bind="meta.classification">' + opts(['C1 · Public', 'C2 · Diffusion restreinte', 'C3 · Confidentiel', 'C4 · Secret'], m.classification) + '</select></label>' +
-      '</div><div class="card form"><h2>Contexte et périmètre</h2>' + field('Contexte', 'meta.contexte', 'textarea') + field('Périmètre', 'meta.perimetre', 'textarea') +
+      '<h2>Identification</h2>' + field('Organisation *', 'meta.organisation', 'text', ' required maxlength="200"') + field('Secteur d\'activité', 'meta.secteur') +
+      field('Effectif', 'meta.effectif') + field('Date de l\'audit', 'meta.dateAudit', 'date') + field('Auditeur', 'meta.auditeur') +
+      '<div class="cols2">' + field('Référence du document', 'meta.reference') + field('Version', 'meta.versionDoc') + '</div>' +
+      field('Destinataires', 'meta.destinataires') +
+      '<label>Classification<input data-bind="meta.classification" list="dl-classif" value="' + esc(m.classification) + '"></label>' +
+      '<datalist id="dl-classif"><option value="Public"><option value="Interne"><option value="Diffusion restreinte"><option value="Confidentiel"></datalist>' +
+      '</div><div class="card form"><h2>Contexte et périmètre</h2>' + field('Organisation (présentation)', 'meta.contexte', 'textarea') +
+      field('Implantation', 'meta.implantation', 'textarea') + field('Périmètre audité', 'meta.perimetre', 'textarea') + field('Acteurs', 'meta.acteurs', 'textarea') +
+      field('Enjeux', 'meta.enjeux', 'textarea') + field('Documents de référence internes', 'meta.documents', 'textarea') +
       '<fieldset><legend>Référentiels activés</legend>' +
-      ['ANSSI', 'CIS', 'SPEC'].map(function (k) { return '<label class="check"><input type="checkbox" data-bind-check="meta.referentiels.' + k + '"' + (refs[k] !== false ? ' checked' : '') + '> ' + ({ ANSSI: 'Guide d\'hygiène informatique ANSSI', CIS: 'CIS Télétravail et petit bureau', SPEC: 'Contrôles spécifiques' })[k] + '</label>'; }).join('') +
+      ['ANSSI', 'CIS', 'SPEC'].map(function (k) { return '<label class="check"><input type="checkbox" data-bind-check="meta.referentiels.' + k + '"' + (refs[k] !== false ? ' checked' : '') + '> ' + ({ ANSSI: 'Guide d\'hygiène informatique ANSSI', CIS: 'CIS Télétravail et petit bureau (box et réseau)', SPEC: 'Contrôles spécifiques (logiciels métier)' })[k] + '</label>'; }).join('') +
       '</fieldset></div>' +
+      '<div class="card form wide"><h2>Points forts de l\'audit</h2><label>Un point fort par ligne, sous la forme « Intitulé : constat »<textarea data-bind="meta.pointsForts" rows="5">' + esc(m.pointsForts) + '</textarea></label></div>' +
       '<div class="card wide"><div class="card-head"><h2>Historique des versions</h2><button class="btn sm" data-act="add-version">Nouvelle version</button></div>' +
-      '<table class="table"><thead><tr><th>Date</th><th>Version</th><th>Auteur</th><th>Commentaire</th><th></th></tr></thead><tbody>' +
+      '<table class="table"><thead><tr><th>Date</th><th>Version</th><th>Auteur</th><th>Modification</th><th></th></tr></thead><tbody>' +
       a.historique.map(function (h, i) {
         return '<tr><td><input type="date" data-bind="historique.' + i + '.date" value="' + esc(h.date) + '"></td><td><input data-bind="historique.' + i + '.version" value="' + esc(h.version) + '" size="5"></td><td><input data-bind="historique.' + i + '.auteur" value="' + esc(h.auteur) + '"></td><td><input data-bind="historique.' + i + '.commentaire" value="' + esc(h.commentaire) + '" class="full"></td><td><button class="icon-btn" data-act="del-row" data-list="historique" data-i="' + i + '" aria-label="Supprimer">✕</button></td></tr>';
       }).join('') + '</tbody></table></div></section>';
   }
 
   // ---------- Vue : matrice ----------
+  function retenueLabel(it) { return it.retenue === false ? 'Non' : it.allegee ? 'Allégée' : 'Oui'; }
   function matchFilters(it, c, f) {
     if (f.src && it.src !== f.src) return false;
     if (f.domaine && it.domaine !== f.domaine) return false;
     if (f.priorite && c.priorite !== f.priorite) return false;
-    if (f.decision && it.decision !== f.decision) return false;
+    if (f.retenue && retenueLabel(it) !== f.retenue) return false;
     if (f.risque && c.niveauRisqueActuel !== f.risque) return false;
     if (f.dict && !(it.dict && it.dict[f.dict])) return false;
     if (f.methode && (it.methodes || []).indexOf(f.methode) < 0) return false;
-    if (f.heat) { var p = f.heat.split('x'); if (C.poids(it.gravite) !== +p[0] || c.vraisemblance !== +p[1]) return false; }
+    if (f.heat) { var p = f.heat.split('x'); if (!c.retenu || !c.evalue || C.poids(it.gravite) !== +p[0] || c.vraisemblance !== +p[1]) return false; }
     if (f.verifier && !it.aVerifier) return false;
-    if (f.q) { var q = f.q.toLowerCase(); if ((it.id + ' ' + it.titre + ' ' + it.domaine + ' ' + (it.constat || '')).toLowerCase().indexOf(q) < 0) return false; }
+    if (f.q) { var q = f.q.toLowerCase(); if ((it.id + ' ' + refLabel(it) + ' ' + it.titre + ' ' + it.domaine + ' ' + (it.constat || '')).toLowerCase().indexOf(q) < 0) return false; }
     return true;
   }
   function viewMatrice() {
     var a = state.audit, f = state.filters, refs = a.meta.referentiels;
-    var domaines = []; a.items.forEach(function (it) { if (domaines.indexOf(it.domaine) < 0) domaines.push(it.domaine); });
+    var domaines = []; a.items.forEach(function (it) { if ((!f.src || it.src === f.src) && domaines.indexOf(it.domaine) < 0) domaines.push(it.domaine); });
     var rows = a.items.filter(function (it) { return refs[it.src] !== false; }).map(function (it) { return { it: it, c: C.compute(it) }; })
       .filter(function (r) { return matchFilters(r.it, r.c, f); });
     var extra = ['risque', 'dict', 'methode', 'heat', 'verifier'].filter(function (k) { return f[k]; });
@@ -351,68 +377,78 @@
       '<button class="btn" data-act="add-spec">Ajouter un contrôle spécifique</button>') +
       '<div class="filters card">' +
       '<input type="search" id="flt-q" placeholder="Rechercher…" value="' + esc(f.q || '') + '" aria-label="Rechercher">' +
-      '<select data-filter="src" aria-label="Référentiel">' + opts([['', 'Tous les référentiels'], 'ANSSI', 'CIS', 'SPEC'], f.src || '') + '</select>' +
+      '<select data-filter="src" aria-label="Référentiel">' + opts([['', 'Tous les référentiels'], ['ANSSI', 'ANSSI'], ['CIS', 'CIS'], ['SPEC', 'Logiciels / spécifiques']], f.src || '') + '</select>' +
       '<select data-filter="domaine" aria-label="Domaine">' + opts([['', 'Tous les domaines']].concat(domaines), f.domaine || '') + '</select>' +
-      '<select data-filter="priorite" aria-label="Priorité">' + opts([['', 'Toutes priorités'], 'P1', 'P2', 'P3', 'OK'], f.priorite || '') + '</select>' +
-      '<select data-filter="decision" aria-label="Décision">' + opts([['', 'Toutes décisions']].concat(DECISIONS), f.decision || '') + '</select>' +
+      '<select data-filter="priorite" aria-label="Priorité">' + opts([['', 'Toutes priorités'], 'P1', 'P2', 'P3', 'OK', 'Non retenue'], f.priorite || '') + '</select>' +
+      '<select data-filter="retenue" aria-label="Retenue">' + opts([['', 'Retenue : toutes'], ['Oui', 'Retenue'], ['Allégée', 'Allégée'], ['Non', 'Non retenue']], f.retenue || '') + '</select>' +
       (extra.length ? '<span class="chip">Filtre : ' + esc(extra.map(function (k) { return k === 'verifier' ? 'à vérifier' : k + ' = ' + f[k]; }).join(', ')) + '</span>' : '') +
       '<button class="btn ghost sm" data-act="clear-filters">Effacer les filtres</button></div>' +
-      '<div class="table-wrap card"><table class="table matrix"><thead><tr><th>Point</th><th>Intitulé</th><th title="Niveau COBIT constaté">Niv.</th><th>Cible</th><th>Écart</th><th>Crit.</th><th>Priorité</th><th>Risque actuel</th><th>Décision</th><th>Action</th></tr></thead><tbody>' +
+      '<div class="table-wrap card"><table class="table matrix"><thead><tr><th>Réf.</th><th>Recommandation</th><th title="Niveau COBIT actuel">Niv.</th><th>Cible</th><th>Écart</th><th>Risque</th><th>Crit.</th><th>Priorité</th><th>Risque actuel</th><th>Fiabilité</th><th>Action</th></tr></thead><tbody>' +
       (rows.length ? rows.map(function (r) {
         var it = r.it, c = r.c;
         return '<tr class="clickable' + (it.retenue === false ? ' excluded' : '') + '" data-act="open-item" data-id="' + esc(it.id) + '" tabindex="0">' +
-          '<td class="mono">' + esc(it.id) + (it.aVerifier ? ' <span title="À vérifier en entretien">⚠</span>' : '') + '</td>' +
-          '<td><b>' + esc(it.titre) + '</b><small class="muted block">' + esc(it.domaine) + '</small></td>' +
+          '<td class="mono">' + esc(refLabel(it)) + (it.aVerifier ? ' <span title="À vérifier en entretien">⚠</span>' : '') + (it.allegee ? ' <span class="badge b-muted" title="Retenue sous forme allégée">allégée</span>' : '') + '</td>' +
+          '<td><b>' + esc(it.titre) + '</b><small class="muted block">' + esc(it.domaine) + (it.domaineSecurite ? ' · ' + esc(it.domaineSecurite) : '') + '</small></td>' +
           '<td>' + (c.evalue ? '<span class="lvl l' + it.niveau + '">' + it.niveau + '</span>' : '<span class="muted">—</span>') + '</td>' +
-          '<td>' + fmt(it.cible) + '</td><td>' + fmt(c.ecart) + '</td><td>' + fmt(c.criticite) + '</td><td>' + prioBadge(it.retenue === false ? '' : c.priorite) + '</td>' +
-          '<td>' + riskBadge(c.risqueActuel) + '</td><td>' + esc(it.retenue === false ? 'Non retenue' : it.decision) + '</td><td>' + (it.action ? esc(it.statutAction) : '<span class="muted">—</span>') + '</td></tr>';
-      }).join('') : '<tr><td colspan="10" class="muted center">Aucun point ne correspond aux filtres.</td></tr>') +
+          '<td>' + fmt(it.cible) + '</td><td>' + fmt(c.ecart) + '</td><td>' + badge(it.gravite, 'b-r-' + slug(it.gravite)) + '</td><td>' + fmt(c.criticite) + '</td><td>' + prioBadge(c.priorite) + '</td>' +
+          '<td>' + riskBadge(c.risqueActuel) + '</td><td>' + esc(it.fiabilite || '—') + '</td><td>' + (it.action ? esc(C.estRealisee(it) ? 'Réalisée' : it.statutAction) : '<span class="muted">—</span>') + '</td></tr>';
+      }).join('') : '<tr><td colspan="11" class="muted center">Aucun point ne correspond aux filtres.</td></tr>') +
       '</tbody></table></div>';
   }
 
   // ---------- Fiche (tiroir) ----------
+  function tarea(path, label, rows, val, attr) { return '<label>' + esc(label) + '<textarea ' + (attr || 'data-ibind') + '="' + path + '" rows="' + (rows || 2) + '">' + esc(val) + '</textarea></label>'; }
+  function tinput(path, label, val, type) { return '<label>' + esc(label) + '<input' + (type ? ' type="' + type + '"' : '') + ' data-ibind="' + path + '" value="' + esc(val) + '"></label>'; }
   function openDrawer(id) {
     var it = item(id); if (!it) return;
     state.drawerId = id;
-    var d = $('#drawer');
-    var chantiers = [['', '—']].concat(state.audit.chantiers.map(function (c) { return [c.id, c.id + ' · ' + c.titre]; }));
-    var spec = it.src === 'SPEC';
-    d.innerHTML = '<div class="drawer-head"><div><span class="mono muted">' + esc(it.id) + ' · ' + esc(it.src) + '</span><h2>' + esc(it.titre) + '</h2></div><button class="icon-btn" data-act="close-drawer" aria-label="Fermer">✕</button></div>' +
+    var d = $('#drawer'), scroll = d.classList.contains('open') ? ($('.drawer-body', d) || {}).scrollTop : 0;
+    var chantiers = [['', '—']].concat(state.audit.chantiers.filter(function (c) { return c.type !== 'recurrent'; }).map(function (c) { return [c.id, c.id + ' · ' + c.titre]; }));
+    var spec = it.src === 'SPEC', nr = it.nonRetenu || {};
+    d.innerHTML = '<div class="drawer-head"><div><span class="mono muted">' + esc(refLabel(it)) + ' · ' + esc(SRC_LABEL[it.src]) + '</span><h2>' + esc(it.titre) + '</h2></div><button class="icon-btn" data-act="close-drawer" aria-label="Fermer">✕</button></div>' +
       '<div class="drawer-body form" data-item="' + esc(it.id) + '">' +
       '<div id="calc-box" class="calc-box"></div>' +
-      '<label class="check"><input type="checkbox" data-ibind-check="retenue"' + (it.retenue !== false ? ' checked' : '') + '> Mesure retenue dans le périmètre</label>' +
-      (spec ? '<label>Intitulé<input data-ibind="titre" value="' + esc(it.titre) + '"></label><label>Domaine<input data-ibind="domaine" value="' + esc(it.domaine) + '"></label><label>Question d\'audit<textarea data-ibind="question" rows="2">' + esc(it.question) + '</textarea></label>'
-        : '<div class="info"><b>Question d\'audit</b><p>' + esc(it.question) + '</p><b>Domaine</b><p>' + esc(it.domaine) + '</p></div>') +
+      '<div class="cols2"><label>Retenue<select data-retenue>' + opts(LISTES.retenue, retenueLabel(it)) + '</select></label>' +
+      '<label>Règle écrite<select data-ibind="regleEcrite">' + opts(REGLES, it.regleEcrite) + '</select></label></div>' +
+      (it.retenue === false || it.allegee ? tarea('justification', 'Justification du choix', 2, it.justification) +
+        '<details open><summary>Élément ' + (it.retenue === false ? 'non retenu' : 'allégé') + ' : risque accepté et mesure compensatoire</summary>' +
+        NON_RETENU.map(function (k) { return tarea('nonRetenu.' + k[0], k[1], 2, nr[k[0]]); }).join('') + '</details>' : '') +
+      (spec ? tinput('titre', 'Mesure de sécurité standard', it.titre) + '<div class="cols2">' + tinput('domaine', 'Logiciel', it.domaine) + tinput('domaineSecurite', 'Domaine de sécurité', it.domaineSecurite) + '</div>' +
+        tarea('question', 'Point de contrôle (question d\'audit)', 2, it.question)
+        : '<div class="info"><b>Question d\'audit</b><p>' + esc(it.question) + '</p><b>Domaine</b><p>' + esc(it.domaine) + '</p>' + (it.correspondance ? '<b>Correspondance</b><p>' + esc(it.correspondance) + '</p>' : '') + '</div>') +
       '<details' + (spec ? ' open' : '') + '><summary>Attendus, vérification et indicateur</summary>' +
-      '<label>Attendus<textarea data-ibind="attendus" rows="2">' + esc(it.attendus) + '</textarea></label>' +
-      '<label>Méthode de vérification<input data-ibind="methodeVerif" value="' + esc(it.methodeVerif) + '"></label>' +
-      '<label>Indicateur<input data-ibind="indicateur" value="' + esc(it.indicateur) + '"></label>' +
-      '<fieldset class="inline"><legend>DICT</legend>' + ['D', 'I', 'C', 'T'].map(function (k) { return '<label class="check"><input type="checkbox" data-ibind-check="dict.' + k + '"' + (it.dict && it.dict[k] ? ' checked' : '') + '> ' + k + '</label>'; }).join('') + '</fieldset></details>' +
+      tarea('attendus', spec ? 'Preuve attendue' : 'Attendus (preuves à fournir)', 2, it.attendus) + tinput('methodeVerif', 'Méthode de vérification', it.methodeVerif) +
+      (spec ? tinput('sourceStandard', 'Source du standard', it.sourceStandard) + tinput('exigence', 'Exigence (règle écrite)', it.exigence) + tinput('mesuresAnssi', 'Mesures ANSSI liées', it.mesuresAnssi)
+        : tinput('indicateur', 'Indicateur de vérification (cible)', it.indicateur) + tinput('correspondance', 'Correspondance', it.correspondance)) +
+      (spec ? '' : '<fieldset class="inline"><legend>DICT protégé</legend>' + ['D', 'I', 'C', 'T'].map(function (k) { return '<label class="check"><input type="checkbox" data-ibind-check="dict.' + k + '"' + (it.dict && it.dict[k] ? ' checked' : '') + '> ' + k + '</label>'; }).join('') + '</fieldset>') + '</details>' +
       '<h3>Évaluation</h3><div class="cols3">' +
-      '<label>Niveau constaté<select data-ibind="niveau" data-num>' + levelOpts(it.niveau, true) + '</select></label>' +
-      '<label>Cible<select data-ibind="cible" data-num>' + levelOpts(it.cible, false) + '</select></label>' +
-      '<label>Gravité<select data-ibind="gravite">' + opts(C.GRAVITES, it.gravite) + '</select></label></div>' +
-      '<div class="cols2"><label>Décision<select data-ibind="decision">' + opts(DECISIONS, it.decision) + '</select></label>' +
-      '<label>Fiabilité<select data-ibind="fiabilite">' + opts(FIABILITES, it.fiabilite) + '</select></label></div>' +
-      '<fieldset class="inline"><legend>Méthodes utilisées</legend>' + METHODES.map(function (m) { return '<label class="check"><input type="checkbox" data-ibind-list="methodes" value="' + esc(m) + '"' + (it.methodes.indexOf(m) >= 0 ? ' checked' : '') + '> ' + esc(m) + '</label>'; }).join('') + '</fieldset>' +
-      '<label>Constat<textarea data-ibind="constat" rows="5">' + esc(it.constat) + '</textarea></label>' +
-      '<fieldset class="inline"><legend>Preuves citées</legend>' + (state.audit.preuves.length ? state.audit.preuves.map(function (p) { return '<label class="check"><input type="checkbox" data-ibind-list="preuves" value="' + esc(p.id) + '"' + (it.preuves.indexOf(p.id) >= 0 ? ' checked' : '') + '> ' + esc(p.id) + ' · ' + esc(p.titre) + '</label>'; }).join('') : '<span class="muted">Aucune preuve au registre. <a href="#/preuves">Ajouter une preuve</a></span>') + '</fieldset>' +
+      '<label>Niveau actuel<select data-ibind="niveau" data-num>' + levelOpts(it.niveau, true) + '</select></label>' +
+      '<label>Cible<select data-ibind="cible" data-num>' + levelOpts(it.cible, true) + '</select></label>' +
+      '<label>Risque (gravité)<select data-ibind="gravite">' + opts(C.GRAVITES, it.gravite) + '</select></label></div>' +
+      '<label>Fiabilité de la preuve<select data-ibind="fiabilite">' + opts(FIABILITES, it.fiabilite) + '</select></label>' +
+      '<fieldset class="inline"><legend>Méthodes de vérification</legend>' + METHODES.map(function (m) { return '<label class="check"><input type="checkbox" data-ibind-list="methodes" value="' + esc(m) + '"' + (it.methodes.indexOf(m) >= 0 ? ' checked' : '') + '> ' + esc(m) + '</label>'; }).join('') + '</fieldset>' +
+      ANALYSE.filter(function (k) { return !spec || (k[0] !== 'pointsForts' && k[0] !== 'couverture' && k[0] !== 'analyseCobit'); }).map(function (k) { return tarea(k[0], k[1], k[2], it[k[0]]); }).join('') +
+      '<fieldset class="inline"><legend>Preuves collectées (registre)</legend>' + (state.audit.preuves.length ? state.audit.preuves.map(function (p) { return '<label class="check"><input type="checkbox" data-ibind-list="preuves" value="' + esc(p.id) + '"' + (it.preuves.indexOf(p.id) >= 0 ? ' checked' : '') + '> ' + esc(p.id) + ' · ' + esc(p.titre) + '</label>'; }).join('') : '<span class="muted">Aucune preuve au registre. <a href="#/preuves">Ajouter une preuve</a></span>') + '</fieldset>' +
       '<h3>Action corrective et suivi</h3>' +
-      '<label>Action corrective<textarea data-ibind="action" rows="2">' + esc(it.action) + '</textarea></label>' +
-      '<div class="cols2"><label>Responsable<input data-ibind="responsable" value="' + esc(it.responsable) + '"></label>' +
-      '<label>Échéance<input type="date" data-ibind="echeance" value="' + esc(it.echeance) + '"></label>' +
+      tarea('action', 'Action corrective proposée', 3, it.action) +
+      '<div class="cols2">' + tinput('responsable', 'Responsable', it.responsable) + tinput('echeance', 'Échéance (date ou « Mars 2027 », « Immédiat »…)', it.echeance) +
       '<label>Statut<select data-ibind="statutAction">' + opts(STATUTS, it.statutAction) + '</select></label>' +
-      '<label>Niveau atteint après l\'action<select data-ibind="niveauApres" data-num>' + levelOpts(it.niveauApres, true) + '</select></label></div>' +
-      '<label>Chantier<select data-ibind="chantier">' + opts(chantiers, it.chantier) + '</select></label>' +
-      '<label>Suivi<textarea data-ibind="suivi" rows="2">' + esc(it.suivi) + '</textarea></label>' +
+      '<label>État d\'avancement (%)<input type="number" min="0" max="100" step="5" data-ibind="avancement" data-num value="' + esc(it.avancement) + '"></label></div>' +
+      '<label class="check"><input type="checkbox" data-ibind-check="actionRealisee"' + (it.actionRealisee ? ' checked' : '') + '> Action réalisée (le risque résiduel actuel est recalculé)</label>' +
+      '<div class="cols2"><label>Date de réalisation<input type="date" data-ibind="dateRealisation" value="' + esc(it.dateRealisation) + '"></label>' +
+      '<label>Niveau atteint après action<select data-ibind="niveauApres" data-num>' + levelOpts(it.niveauApres, true) + '</select></label></div>' +
+      tinput('justificatifRealisation', 'Justificatif / preuve de réalisation', it.justificatifRealisation) +
+      '<label>Chantier du plan d\'action<select data-ibind="chantier">' + opts(chantiers, it.chantier) + '</select></label>' +
+      tarea('suivi', 'Suivi', 2, it.suivi) +
       (spec ? '<button class="btn ghost danger sm" data-act="del-spec" data-id="' + esc(it.id) + '">Supprimer ce contrôle spécifique</button>' : '') +
       '</div>';
     renderCalcBox(it);
     d.classList.add('open'); d.setAttribute('aria-hidden', 'false'); $('#scrim').classList.add('show');
-    var first = $('select,input,textarea', d); if (first) first.focus();
+    if (scroll) $('.drawer-body', d).scrollTop = scroll; else { var first = $('select,input,textarea', d); if (first) first.focus(); }
   }
   function renderCalcBox(it) {
     var c = C.compute(it), el = $('#calc-box'); if (!el) return;
+    if (!c.retenu) { el.innerHTML = '<div><span>Priorité</span><b>' + prioBadge(c.priorite) + '</b></div><div><span>Risque initial</span><b>' + riskBadge(c.risqueInitial) + '</b></div><div><span>Risque actuel</span><b>' + riskBadge(c.risqueActuel) + '</b></div><div><span>Prévisionnel</span><b>' + riskBadge(c.risqueApres) + '</b></div>'; return; }
     el.innerHTML = '<div><span>Écart</span><b>' + fmt(c.ecart) + '</b></div><div><span>Criticité</span><b>' + fmt(c.criticite) + '</b></div>' +
       '<div><span>Priorité</span><b>' + prioBadge(c.priorite) + '</b></div><div><span>Délai</span><b>' + (c.delaiMois ? c.delaiMois + ' mois' : '—') + '</b></div>' +
       '<div><span>Risque initial</span><b>' + riskBadge(c.risqueInitial) + '</b></div><div><span>Risque actuel</span><b>' + riskBadge(c.risqueActuel) + '</b></div><div><span>Après plan</span><b>' + riskBadge(c.risqueApres) + '</b></div>';
@@ -424,15 +460,17 @@
   }
 
   // ---------- Vue : plan d'action ----------
+  function isoDate(s) { return /^\d{4}-\d\d-\d\d$/.test(String(s || '')); }
   function viewPlan() {
     var a = state.audit;
     var actions = C.retenus(a).map(function (it) { return { it: it, c: C.compute(it) }; })
       .filter(function (r) { return r.c.evalue && (r.c.ecart > 0 || r.it.action); })
       .sort(function (x, y) { return (y.c.criticite || 0) - (x.c.criticite || 0) || x.it.id.localeCompare(y.it.id); });
     var dates = [];
-    a.chantiers.forEach(function (c) { if (c.debut) dates.push(c.debut); if (c.fin) dates.push(c.fin); });
-    a.jalons.forEach(function (j) { if (j.date) dates.push(j.date); });
+    a.chantiers.forEach(function (c) { if (isoDate(c.debut)) dates.push(c.debut); if (isoDate(c.fin)) dates.push(c.fin); (c.mois || []).forEach(function (m) { dates.push(m); }); });
+    a.jalons.forEach(function (j) { if (isoDate(j.date)) dates.push(j.date); });
     dates.sort();
+    var count = {}; a.items.forEach(function (it) { if (it.chantier) count[it.chantier] = (count[it.chantier] || 0) + 1; });
     var gantt = '<p class="muted">Ajoutez des chantiers avec des dates de début et de fin pour afficher le diagramme de Gantt.</p>';
     if (dates.length >= 2) {
       var t0 = new Date(dates[0].slice(0, 8) + '01T00:00:00Z').getTime();
@@ -441,38 +479,46 @@
       var pos = function (d) { return Math.max(0, Math.min(100, 100 * (new Date(d + 'T00:00:00Z').getTime() - t0) / span)); };
       var months = [], m = new Date(t0);
       while (m.getTime() < t1) { months.push({ l: m.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit', timeZone: 'UTC' }), x: pos(m.toISOString().slice(0, 10)) }); m.setUTCMonth(m.getUTCMonth() + 1); }
-      var nowX = pos(today());
+      var nowX = pos(today()), now = nowX > 0 && nowX < 100 ? '<i class="g-now" style="left:' + nowX + '%"></i>' : '';
+      var monthW = 100 / months.length;
       gantt = '<div class="gantt"><div class="g-row g-scale"><div class="g-label"></div><div class="g-track">' + months.map(function (mm) { return '<span style="left:' + mm.x + '%">' + esc(mm.l) + '</span>'; }).join('') + '</div></div>' +
-        a.chantiers.filter(function (c) { return c.debut && c.fin; }).map(function (c) {
-          var x = pos(c.debut), w = Math.max(1, pos(c.fin) - x), n = a.items.filter(function (it) { return it.chantier === c.id; }).length;
-          return '<div class="g-row"><div class="g-label"><b>' + esc(c.titre) + '</b><small>' + esc(c.id) + ' · ' + n + ' mesure(s)</small></div><div class="g-track">' +
-            (nowX > 0 && nowX < 100 ? '<i class="g-now" style="left:' + nowX + '%"></i>' : '') +
-            '<div class="g-bar' + (c.type === 'recurrent' ? ' rec' : '') + '" style="left:' + x + '%;width:' + w + '%" title="' + esc(fmtDate(c.debut) + ' → ' + fmtDate(c.fin) + ' · ' + (c.avancement || 0) + ' %') + '"><i style="width:' + Math.max(0, Math.min(100, +c.avancement || 0)) + '%"></i><span>' + (c.avancement || 0) + ' %</span></div></div></div>';
+        a.chantiers.filter(function (c) { return c.type !== 'recurrent' && isoDate(c.debut) && isoDate(c.fin); }).map(function (c) {
+          var x = pos(c.debut), w = Math.max(1, pos(c.fin) - x);
+          return '<div class="g-row"><div class="g-label"><b>' + esc(c.titre) + '</b><small>' + esc(c.id) + ' · ' + (count[c.id] || 0) + ' point(s) · ' + esc(c.responsable || '') + '</small></div><div class="g-track">' + now +
+            '<div class="g-bar" style="left:' + x + '%;width:' + w + '%" title="' + esc(fmtDate(c.debut) + ' → ' + fmtDate(c.fin) + ' · ' + (c.avancement || 0) + ' %') + '"><i style="width:' + Math.max(0, Math.min(100, +c.avancement || 0)) + '%"></i><span>' + (c.avancement || 0) + ' %</span></div></div></div>';
         }).join('') +
-        a.jalons.filter(function (j) { return j.date; }).map(function (j) {
-          return '<div class="g-row"><div class="g-label"><b>◆ ' + esc(j.titre) + '</b><small>Jalon · ' + esc(fmtDate(j.date)) + '</small></div><div class="g-track"><span class="g-milestone" style="left:' + pos(j.date) + '%" title="' + esc(j.titre) + '">◆</span></div></div>';
-        }).join('') + '</div><p class="legend"><span class="lg-bar"></span> Chantier <span class="lg-bar rec"></span> Activité récurrente <span class="lg-ms">◆</span> Jalon <span class="lg-now"></span> Aujourd\'hui</p>';
+        a.chantiers.filter(function (c) { return c.type === 'recurrent'; }).map(function (c) {
+          var marks = (c.mois && c.mois.length) ? c.mois.map(function (d) { return '<span class="g-dot" style="left:' + (pos(d) + monthW / 2) + '%" title="' + esc(fmtDate(d)) + '">●</span>'; }).join('')
+            : (isoDate(c.debut) && isoDate(c.fin) ? '<div class="g-bar rec" style="left:' + pos(c.debut) + '%;width:' + Math.max(1, pos(c.fin) - pos(c.debut)) + '%"></div>' : '');
+          return '<div class="g-row"><div class="g-label"><b>' + esc(c.titre) + '</b><small>Activité récurrente · ' + esc(c.responsable || '') + '</small></div><div class="g-track">' + now + marks + '</div></div>';
+        }).join('') +
+        a.jalons.filter(function (j) { return isoDate(j.date); }).map(function (j) {
+          return '<div class="g-row"><div class="g-label"><b>◆ ' + esc(j.id + ' · ' + j.titre) + '</b><small>Jalon · ' + esc(fmtDate(j.date)) + (j.chantiers ? ' · ' + esc(j.chantiers) : '') + '</small></div><div class="g-track">' + now + '<span class="g-milestone" style="left:' + pos(j.date) + '%" title="' + esc(j.criteres || j.titre) + '">◆</span></div></div>';
+        }).join('') + '</div><p class="legend"><span class="lg-bar"></span> Chantier <span class="lg-dot">●</span> Activité récurrente <span class="lg-ms">◆</span> Jalon <span class="lg-now"></span> Aujourd\'hui</p>';
     }
-    main.innerHTML = head('Plan d\'action', 'Chantiers, jalons et actions correctives triées par criticité.') +
-      '<div class="card"><h2>Diagramme de Gantt</h2>' + gantt + '</div>' +
-      '<div class="card"><div class="card-head"><h2>Chantiers</h2><button class="btn sm" data-act="add-chantier">Ajouter un chantier</button></div>' +
-      '<div class="table-wrap"><table class="table"><thead><tr><th>N°</th><th>Intitulé</th><th>Type</th><th>Début</th><th>Fin</th><th>Avancement (%)</th><th></th></tr></thead><tbody>' +
+    main.innerHTML = head('Plan d\'action', 'Chantiers, plan de déploiement, jalons et actions correctives triées par criticité.') +
+      '<div class="card"><h2>Plan de déploiement</h2>' + gantt + '</div>' +
+      '<div class="card"><div class="card-head"><h2>Chantiers et activités récurrentes</h2><div class="row-actions"><button class="btn sm" data-act="add-chantier">Ajouter un chantier</button><button class="btn sm ghost" data-act="add-recurrent">Ajouter une activité récurrente</button></div></div>' +
+      '<div class="table-wrap"><table class="table"><thead><tr><th>N°</th><th>Chantier</th><th>Responsable</th><th>Début</th><th>Fin</th><th>Avancement (%)</th><th>Statut</th><th></th></tr></thead><tbody>' +
       (a.chantiers.length ? a.chantiers.map(function (c, i) {
-        return '<tr><td class="mono">' + esc(c.id) + '</td><td><input class="full" data-bind="chantiers.' + i + '.titre" value="' + esc(c.titre) + '"></td>' +
-          '<td><select data-bind="chantiers.' + i + '.type">' + opts([['chantier', 'Chantier'], ['recurrent', 'Récurrent']], c.type) + '</select></td>' +
+        return '<tr><td class="mono">' + esc(c.id) + '</td><td><input class="full" data-bind="chantiers.' + i + '.titre" value="' + esc(c.titre) + '"><small class="muted block">' + (c.type === 'recurrent' ? 'Activité récurrente' : (count[c.id] || 0) + ' point(s) de contrôle' + (c.cout ? ' · coût ' + esc(c.cout) : '')) + '</small></td>' +
+          '<td><input data-bind="chantiers.' + i + '.responsable" value="' + esc(c.responsable) + '"></td>' +
           '<td><input type="date" data-bind="chantiers.' + i + '.debut" value="' + esc(c.debut) + '"></td><td><input type="date" data-bind="chantiers.' + i + '.fin" value="' + esc(c.fin) + '"></td>' +
-          '<td><input type="number" min="0" max="100" step="5" data-bind="chantiers.' + i + '.avancement" data-num value="' + esc(c.avancement) + '"></td>' +
-          '<td><button class="icon-btn" data-act="del-row" data-list="chantiers" data-i="' + i + '" aria-label="Supprimer">✕</button></td></tr>';
-      }).join('') : '<tr><td colspan="7" class="muted center">Aucun chantier.</td></tr>') + '</tbody></table></div></div>' +
-      '<div class="card"><div class="card-head"><h2>Jalons</h2><button class="btn sm" data-act="add-jalon">Ajouter un jalon</button></div>' +
-      '<table class="table"><thead><tr><th>Intitulé</th><th>Date</th><th></th></tr></thead><tbody>' +
+          '<td><input type="number" min="0" max="100" step="5" data-bind="chantiers.' + i + '.avancement" data-num value="' + esc(c.avancement) + '" class="num"></td>' +
+          '<td><select data-bind="chantiers.' + i + '.statut">' + opts(STATUTS, c.statut || 'À faire') + '</select></td>' +
+          '<td class="nowrap"><button class="btn sm ghost" data-act="edit-chantier" data-i="' + i + '">Détails</button><button class="icon-btn" data-act="del-row" data-list="chantiers" data-i="' + i + '" aria-label="Supprimer">✕</button></td></tr>';
+      }).join('') : '<tr><td colspan="8" class="muted center">Aucun chantier.</td></tr>') + '</tbody></table></div></div>' +
+      '<div class="card"><div class="card-head"><h2>Jalons et critères de passage</h2><button class="btn sm" data-act="add-jalon">Ajouter un jalon</button></div>' +
+      '<div class="table-wrap"><table class="table"><thead><tr><th>Jalon</th><th>Intitulé</th><th>Date</th><th>Chantiers</th><th>Critères de passage (preuves attendues)</th><th></th></tr></thead><tbody>' +
       (a.jalons.length ? a.jalons.map(function (j, i) {
-        return '<tr><td><input class="full" data-bind="jalons.' + i + '.titre" value="' + esc(j.titre) + '"></td><td><input type="date" data-bind="jalons.' + i + '.date" value="' + esc(j.date) + '"></td><td><button class="icon-btn" data-act="del-row" data-list="jalons" data-i="' + i + '" aria-label="Supprimer">✕</button></td></tr>';
-      }).join('') : '<tr><td colspan="3" class="muted center">Aucun jalon.</td></tr>') + '</tbody></table></div>' +
-      '<div class="card"><h2>Actions correctives (' + actions.length + ')</h2><div class="table-wrap"><table class="table"><thead><tr><th>Point</th><th>Action</th><th>Priorité</th><th>Crit.</th><th>Responsable</th><th>Échéance</th><th>Chantier</th><th>Statut</th></tr></thead><tbody>' +
+        return '<tr><td class="mono">' + esc(j.id) + '</td><td><input class="full" data-bind="jalons.' + i + '.titre" value="' + esc(j.titre) + '"></td><td><input type="date" data-bind="jalons.' + i + '.date" value="' + esc(j.date) + '"></td>' +
+          '<td><input data-bind="jalons.' + i + '.chantiers" value="' + esc(j.chantiers) + '"></td><td><textarea class="full" rows="2" data-bind="jalons.' + i + '.criteres">' + esc(j.criteres) + '</textarea></td>' +
+          '<td><button class="icon-btn" data-act="del-row" data-list="jalons" data-i="' + i + '" aria-label="Supprimer">✕</button></td></tr>';
+      }).join('') : '<tr><td colspan="6" class="muted center">Aucun jalon.</td></tr>') + '</tbody></table></div></div>' +
+      '<div class="card"><h2>Actions correctives (' + actions.length + ')</h2><div class="table-wrap"><table class="table"><thead><tr><th>Réf.</th><th>Action corrective proposée</th><th>Priorité</th><th>Crit.</th><th>Responsable</th><th>Échéance</th><th>Chantier</th><th>Statut</th></tr></thead><tbody>' +
       (actions.length ? actions.map(function (r) {
-        var it = r.it, late = it.echeance && it.echeance < today() && it.statutAction !== 'Réalisé';
-        return '<tr class="clickable" data-act="open-item" data-id="' + esc(it.id) + '" tabindex="0"><td class="mono">' + esc(it.id) + '</td><td>' + (it.action ? esc(it.action) : '<span class="muted">À définir · ' + esc(it.titre) + '</span>') + '</td><td>' + prioBadge(r.c.priorite) + '</td><td>' + fmt(r.c.criticite) + '</td><td>' + esc(it.responsable || '—') + '</td><td' + (late ? ' class="late"' : '') + '>' + esc(fmtDate(it.echeance)) + '</td><td>' + esc(it.chantier || '—') + '</td><td>' + badge(it.statutAction, 'b-s-' + slug(it.statutAction)) + '</td></tr>';
+        var it = r.it, late = isoDate(it.echeance) && it.echeance < today() && !C.estRealisee(it);
+        return '<tr class="clickable" data-act="open-item" data-id="' + esc(it.id) + '" tabindex="0"><td class="mono">' + esc(refLabel(it)) + '</td><td>' + (it.action ? esc(it.action) : '<span class="muted">À définir · ' + esc(it.titre) + '</span>') + '</td><td>' + prioBadge(r.c.priorite) + '</td><td>' + fmt(r.c.criticite) + '</td><td>' + esc(it.responsable || '—') + '</td><td' + (late ? ' class="late"' : '') + '>' + esc(isoDate(it.echeance) ? fmtDate(it.echeance) : (it.echeance || '—')) + '</td><td>' + esc(it.chantier || '—') + '</td><td>' + badge(C.estRealisee(it) ? 'Réalisée' : it.statutAction, 'b-s-' + slug(C.estRealisee(it) ? 'realise' : it.statutAction)) + '</td></tr>';
       }).join('') : '<tr><td colspan="8" class="muted center">Aucune action : tous les points évalués atteignent leur cible.</td></tr>') + '</tbody></table></div></div>';
   }
 
@@ -480,18 +526,21 @@
   function viewPreuves() {
     var a = state.audit;
     var cites = {};
-    a.items.forEach(function (it) { (it.preuves || []).forEach(function (p) { (cites[p] = cites[p] || []).push(it.id); }); });
-    main.innerHTML = head('Registre des preuves', a.preuves.length + ' preuve(s) · statut de collecte et points de contrôle qui les citent', '<button class="btn primary" data-act="add-preuve">Ajouter une preuve</button>') +
-      '<div class="card table-wrap"><table class="table"><thead><tr><th>N°</th><th>Intitulé</th><th>Type</th><th>Statut</th><th>Date</th><th>Commentaire</th><th>Citée par</th><th></th></tr></thead><tbody>' +
+    a.items.forEach(function (it) { (it.preuves || []).forEach(function (p) { (cites[p] = cites[p] || []).push(it); }); });
+    main.innerHTML = head('Registre des preuves', a.preuves.length + ' preuve(s) · ' + a.preuves.filter(function (p) { return C.PREUVE_OK.indexOf(p.statut) >= 0; }).length + ' collectée(s) · points de contrôle qui les citent', '<button class="btn primary" data-act="add-preuve">Ajouter une preuve</button>') +
+      '<div class="card table-wrap"><table class="table"><thead><tr><th>ID</th><th>Type</th><th>Intitulé de la preuve</th><th>Source / auteur</th><th>Date de collecte</th><th>Statut</th><th>Ce que la preuve établit</th><th>Mesures concernées</th><th>Citée par</th><th></th></tr></thead><tbody>' +
       (a.preuves.length ? a.preuves.map(function (p, i) {
-        return '<tr><td class="mono">' + esc(p.id) + '</td><td><input class="full" data-bind="preuves.' + i + '.titre" value="' + esc(p.titre) + '"></td>' +
-          '<td><select data-bind="preuves.' + i + '.type">' + opts(['Document', 'Capture', 'Export', 'Entretien', 'Observation', 'Questionnaire', 'Autre'], p.type) + '</select></td>' +
-          '<td><select data-bind="preuves.' + i + '.statut">' + opts(STATUTS_PREUVE, p.statut) + '</select></td>' +
+        return '<tr><td class="mono">' + esc(p.id) + '</td>' +
+          '<td><select data-bind="preuves.' + i + '.type">' + opts(['Document', 'Entretien', 'Questionnaire', 'Observation', 'Capture', 'Capture / test', 'Test', 'Extraction', 'Échantillonnage', 'Analyse', 'Autre'], p.type) + '</select></td>' +
+          '<td><textarea class="full" rows="2" data-bind="preuves.' + i + '.titre">' + esc(p.titre) + '</textarea></td>' +
+          '<td><input data-bind="preuves.' + i + '.source" value="' + esc(p.source) + '"></td>' +
           '<td><input type="date" data-bind="preuves.' + i + '.date" value="' + esc(p.date) + '"></td>' +
-          '<td><input class="full" data-bind="preuves.' + i + '.commentaire" value="' + esc(p.commentaire) + '"></td>' +
-          '<td>' + ((cites[p.id] || []).map(function (id) { return '<button class="link mono" data-act="open-item" data-id="' + esc(id) + '">' + esc(id) + '</button>'; }).join(' ') || '<span class="muted">—</span>') + '</td>' +
+          '<td><select data-bind="preuves.' + i + '.statut">' + opts(STATUTS_PREUVE.indexOf(p.statut) < 0 && p.statut ? STATUTS_PREUVE.concat([p.statut]) : STATUTS_PREUVE, p.statut) + '</select></td>' +
+          '<td><textarea class="full" rows="2" data-bind="preuves.' + i + '.etablit">' + esc(p.etablit || p.commentaire) + '</textarea></td>' +
+          '<td><input data-bind="preuves.' + i + '.mesures" value="' + esc(p.mesures) + '"></td>' +
+          '<td>' + ((cites[p.id] || []).map(function (it) { return '<button class="link mono" data-act="open-item" data-id="' + esc(it.id) + '">' + esc(refLabel(it)) + '</button>'; }).join(' ') || '<span class="muted">—</span>') + '</td>' +
           '<td><button class="icon-btn" data-act="del-preuve" data-i="' + i + '" aria-label="Supprimer">✕</button></td></tr>';
-      }).join('') : '<tr><td colspan="8" class="muted center">Aucune preuve enregistrée.</td></tr>') + '</tbody></table></div>';
+      }).join('') : '<tr><td colspan="10" class="muted center">Aucune preuve enregistrée.</td></tr>') + '</tbody></table></div>';
   }
 
   // ---------- Vue : KPI ----------
@@ -596,33 +645,9 @@
 
   // ---------- Exports ----------
   function exportXlsx() {
-    var a = state.audit, s = C.summary(a);
-    var sheets = [];
-    sheets.push({ name: 'Synthèse', widths: [34, 50], rows: [['Élément', 'Valeur'],
-      ['Organisation', a.meta.organisation], ['Date de l\'audit', a.meta.dateAudit], ['Auditeur', a.meta.auditeur], ['Classification', a.meta.classification],
-      ['Périmètre', a.meta.perimetre], ['Points retenus', s.retenus], ['Points évalués', s.evalues], ['Maturité moyenne', s.maturite], ['Maturité actuelle', s.maturiteCourante],
-      ['Cible moyenne', s.cibleMoyenne], ['Points à la cible (%)', s.conformite], ['P1', s.priorites.P1], ['P2', s.priorites.P2], ['P3', s.priorites.P3],
-      ['Risque cumulé initial', s.risque.initial], ['Risque cumulé actuel', s.risque.actuel], ['Risque cumulé après plan', s.risque.apres]]
-      .concat(s.parDomaine.map(function (d) { return ['Maturité · ' + d.src + ' · ' + d.domaine, d.niveau]; })) });
-    var mrows = [['Point', 'Référentiel', 'Domaine', 'Intitulé', 'Question', 'Retenue', 'D', 'I', 'C', 'T', 'Décision', 'Méthodes', 'Fiabilité', 'Constat', 'Preuves', 'Niveau', 'Cible', 'Gravité', 'Écart', 'Criticité', 'Priorité', 'Risque initial', 'Risque actuel', 'Risque après plan', 'Action', 'Responsable', 'Échéance', 'Statut', 'Niveau après action', 'Chantier']];
-    a.items.forEach(function (it) {
-      var c = C.compute(it);
-      mrows.push([it.id, it.src, it.domaine, it.titre, it.question, it.retenue === false ? 'Non' : 'Oui', it.dict.D ? 'X' : '', it.dict.I ? 'X' : '', it.dict.C ? 'X' : '', it.dict.T ? 'X' : '',
-        it.decision, (it.methodes || []).join(', '), it.fiabilite, it.constat, (it.preuves || []).join(', '), it.niveau, it.cible, it.gravite, c.ecart, c.criticite, c.priorite,
-        c.risqueInitial, c.risqueActuel, c.risqueApres, it.action, it.responsable, it.echeance, it.action ? it.statutAction : '', it.niveauApres, it.chantier]);
-    });
-    sheets.push({ name: 'Matrice', widths: [10, 8, 24, 40, 40, 7, 3, 3, 3, 3, 12, 20, 11, 50, 14, 7, 6, 9, 6, 8, 8, 8, 8, 8, 40, 18, 11, 10, 8, 9], rows: mrows });
-    sheets.push({ name: 'Plan d\'action', widths: [10, 50, 8, 8, 20, 12, 10, 10], rows: [['Point', 'Action', 'Priorité', 'Criticité', 'Responsable', 'Échéance', 'Chantier', 'Statut']].concat(
-      C.retenus(a).map(function (it) { return { it: it, c: C.compute(it) }; }).filter(function (r) { return r.c.ecart > 0 || r.it.action; })
-        .sort(function (x, y) { return (y.c.criticite || 0) - (x.c.criticite || 0); })
-        .map(function (r) { return [r.it.id, r.it.action || r.it.titre, r.c.priorite, r.c.criticite, r.it.responsable, r.it.echeance, r.it.chantier, r.it.statutAction]; })) });
-    sheets.push({ name: 'Chantiers', widths: [8, 40, 11, 12, 12, 12], rows: [['N°', 'Intitulé', 'Type', 'Début', 'Fin', 'Avancement (%)']].concat(a.chantiers.map(function (c) { return [c.id, c.titre, c.type, c.debut, c.fin, c.avancement]; }))
-      .concat(a.jalons.map(function (j) { return [j.id, j.titre, 'jalon', j.date, j.date, '']; })) });
-    sheets.push({ name: 'Preuves', widths: [8, 40, 14, 12, 12, 40], rows: [['N°', 'Intitulé', 'Type', 'Statut', 'Date', 'Commentaire']].concat(a.preuves.map(function (p) { return [p.id, p.titre, p.type, p.statut, p.date, p.commentaire]; })) });
-    sheets.push({ name: 'KPI', widths: [8, 44, 10, 8, 8, 10, 10], rows: [['N°', 'Indicateur', 'Type', 'Unité', 'Cible', 'Valeur', 'Atteinte (%)']].concat(a.kpis.map(function (k) { var v = kpiValue(k, s); return [k.id, k.nom, k.mode === 'auto' ? 'Calculé' : 'Manuel', k.unite, k.cible, v, C.kpiAtteinte(v, k.cible, k.sens)]; })) });
-    sheets.push({ name: 'Relevés KPI', widths: [8, 12, 10], rows: [['KPI', 'Date', 'Valeur']].concat(a.releves.map(function (r) { return [r.kpi, r.date, r.valeur]; })) });
-    download(fileName('xlsx'), window.XLSXLite.build(sheets));
-    toast('Classeur Excel exporté.');
+    var a = clone(state.audit);
+    download(fileName('xlsx'), window.XLSXLite.build(window.SSIExport.build(a, C, CAT)));
+    toast('Matrice Excel exportée.');
   }
   function exportJson() {
     download(fileName('json'), new Blob([JSON.stringify(state.audit, null, 2)], { type: 'application/json' }));
@@ -639,7 +664,7 @@
     'new-audit': newAuditDialog,
     'load-demo': function () {
       if (!window.SSI_DEMO) return toast('Jeu de démonstration indisponible.', 'err');
-      var d = normalize(clone(window.SSI_DEMO));
+      var d = freshDemo();
       S.save(d).then(function () { state.audit = d; S.prefs.set('current', d.id); toast('Démonstration Global Green chargée.'); go('tableau'); }).catch(function (e) { toast(e.message, 'err'); });
     },
     'import-audit': function () {
@@ -689,9 +714,19 @@
       state.audit[el.dataset.list].splice(+el.dataset.i, 1); markDirty(); render();
     },
     'add-version': function () { state.audit.historique.push({ date: today(), version: '', auteur: state.audit.meta.auditeur || '', commentaire: '' }); markDirty(); render(); },
-    'add-chantier': function () { var a = state.audit; a.chantiers.push({ id: nextId(a.chantiers, 'CH'), titre: 'Nouveau chantier', debut: today(), fin: C.addMonths(today(), 3), avancement: 0, type: 'chantier' }); markDirty(); render(); },
-    'add-jalon': function () { var a = state.audit; a.jalons.push({ id: nextId(a.jalons, 'J'), titre: 'Nouveau jalon', date: C.addMonths(today(), 1) }); markDirty(); render(); },
-    'add-preuve': function () { var a = state.audit; a.preuves.push({ id: nextId(a.preuves, 'PR'), titre: '', type: 'Document', statut: 'À collecter', date: '', commentaire: '' }); markDirty(); render(); var ins = $$('[data-bind$=".titre"]'); if (ins.length) ins[ins.length - 1].focus(); },
+    'add-chantier': function () { var a = state.audit; a.chantiers.push({ id: nextId(a.chantiers, 'CH'), titre: 'Nouveau chantier', mesures: '', actions: '', responsable: '', echeance: '', cout: '', indicateur: '', statut: 'À faire', debut: today(), fin: C.addMonths(today(), 3), avancement: 0, type: 'chantier' }); markDirty(); render(); },
+    'add-recurrent': function () { var a = state.audit; a.chantiers.push({ id: nextId(a.chantiers, 'REC'), titre: 'Nouvelle activité récurrente', responsable: '', statut: 'À faire', debut: today(), fin: C.addMonths(today(), 12), avancement: 0, type: 'recurrent', mois: [0, 3, 6, 9].map(function (k) { return C.addMonths(today().slice(0, 8) + '01', k); }) }); markDirty(); render(); },
+    'edit-chantier': function (el) {
+      var i = +el.dataset.i, c = state.audit.chantiers[i]; if (!c) return;
+      var b = function (k, label, rows) { return '<label>' + esc(label) + '<textarea data-bind="chantiers.' + i + '.' + k + '" rows="' + (rows || 2) + '">' + esc(c[k]) + '</textarea></label>'; };
+      modal(c.id + ' · ' + c.titre, '<div class="form">' + (c.type === 'recurrent'
+        ? '<label>Mois concernés (AAAA-MM, séparés par des virgules)<input data-mois="' + i + '" value="' + esc((c.mois || []).map(function (m) { return m.slice(0, 7); }).join(', ')) + '"></label>'
+        : b('mesures', 'Mesures couvertes') + b('actions', 'Actions clés', 3) + '<div class="cols2"><label>Échéance<input data-bind="chantiers.' + i + '.echeance" value="' + esc(c.echeance) + '"></label><label>Coût estimé<input data-bind="chantiers.' + i + '.cout" list="dl-cout" value="' + esc(c.cout) + '"></label></div><datalist id="dl-cout"><option value="Faible"><option value="Moyen"><option value="Élevé"></datalist>' +
+          b('indicateur', 'Indicateur de réussite') + b('justificatif', 'Justificatif / preuve de réalisation')) + '</div>',
+        [{ label: 'Fermer', cls: 'primary', onClick: function () { render(); } }]);
+    },
+    'add-jalon': function () { var a = state.audit, n = a.jalons.length + 1; while (a.jalons.some(function (j) { return j.id === 'J' + n; })) n++; a.jalons.push({ id: 'J' + n, titre: 'Nouveau jalon', date: C.addMonths(today(), 1), chantiers: '', criteres: '' }); markDirty(); render(); },
+    'add-preuve': function () { var a = state.audit; a.preuves.push({ id: nextId(a.preuves, 'PR'), titre: '', type: 'Document', source: '', statut: 'À collecter', date: '', etablit: '', mesures: '', emplacement: '', commentaire: '' }); markDirty(); render(); var ins = $$('[data-bind$=".titre"]'); if (ins.length) ins[ins.length - 1].focus(); },
     'del-preuve': function (el) {
       var a = state.audit, p = a.preuves[+el.dataset.i];
       if (!p || !confirm('Supprimer la preuve ' + p.id + ' ? Elle sera retirée des points de contrôle qui la citent.')) return;
@@ -809,17 +844,21 @@
     }
     if (el.dataset.bindCheck) { setPath(state.audit, el.dataset.bindCheck, el.checked); markDirty(); return; }
     var box = el.closest('[data-item]'); if (!box) return;
+    if (el.dataset.ibind && el.dataset.ibind.indexOf('nonRetenu.') === 0) { var itn = item(box.dataset.item); if (itn) { itn.nonRetenu = itn.nonRetenu || {}; } }
     var it = item(box.dataset.item); if (!it) return;
     if (el.dataset.ibind) {
       setPath(it, el.dataset.ibind, bindValue(el));
       if (el.dataset.ibind === 'niveau' && e.type === 'change') {
         var c = C.compute(it);
-        if (it.retenue !== false && (it.decision === 'Non évalué' || !it.decision) && c.evalue) { it.decision = c.atteint ? 'Conforme' : it.niveau >= 2 ? 'Partiel' : 'Non conforme'; var ds = $('[data-ibind="decision"]', box); if (ds) ds.value = it.decision; }
         if (c.ecart > 0 && !it.echeance && c.delaiMois) { it.echeance = C.addMonths(state.audit.meta.dateAudit, c.delaiMois); var ec = $('[data-ibind="echeance"]', box); if (ec) ec.value = it.echeance; }
       }
     } else if (el.dataset.ibindCheck) {
       setPath(it, el.dataset.ibindCheck, el.checked);
-      if (el.dataset.ibindCheck === 'retenue') { it.decision = el.checked ? (it.decision === 'Non retenue' ? 'Non évalué' : it.decision) : 'Non retenue'; var d = $('[data-ibind="decision"]', box); if (d) d.value = it.decision; }
+      if (el.dataset.ibindCheck === 'actionRealisee' && el.checked) { if (it.statutAction !== 'Fait') { it.statutAction = 'Fait'; var sa = $('[data-ibind="statutAction"]', box); if (sa) sa.value = 'Fait'; } if (!it.dateRealisation) { it.dateRealisation = today(); var dr = $('[data-ibind="dateRealisation"]', box); if (dr) dr.value = it.dateRealisation; } }
+    } else if (el.dataset.retenue !== undefined) {
+      if (e.type !== 'change') return;
+      it.retenue = el.value !== 'Non'; it.allegee = el.value === 'Allégée';
+      markDirty(); openDrawer(it.id); return;
     } else if (el.dataset.ibindList) {
       var list = it[el.dataset.ibindList] = it[el.dataset.ibindList] || [];
       var i = list.indexOf(el.value);
@@ -837,6 +876,13 @@
     if (e.target.id === 'flt-q') {
       state.filters.q = e.target.value; clearTimeout(state.qTimer);
       state.qTimer = setTimeout(function () { render(); var i = $('#flt-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250);
+    }
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target.dataset && e.target.dataset.mois !== undefined && state.audit) {
+      var c = state.audit.chantiers[+e.target.dataset.mois];
+      c.mois = e.target.value.split(/[,;\s]+/).filter(function (x) { return /^\d{4}-\d\d$/.test(x); }).map(function (x) { return x + '-01'; });
+      markDirty();
     }
   });
   document.addEventListener('submit', function (e) {
