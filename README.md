@@ -39,7 +39,8 @@ Le **catalogue** chargé à la création d'un audit comprend les 42 mesures ANSS
 
 ## Questionnaire et audit automatique
 
-1. **Créer** un questionnaire depuis l'onglet *Questionnaire* : une question en langage courant par mesure retenue (62 pour ANSSI + CIS, plus les contrôles spécifiques).
+0. **Questionnaire standard** : un lien fixe, sans préparation, avec les 62 questions ANSSI + CIS : `questionnaire.html#standard`. Les réponses (fichier `.json` téléchargé par le répondant, ou directement sur le même navigateur) s'importent dans n'importe quel audit via *Questionnaire → Questionnaire standard*.
+1. **Créer** un questionnaire personnalisé depuis l'onglet *Questionnaire* : une question en langage courant par mesure retenue (62 pour ANSSI + CIS, plus les contrôles spécifiques).
 2. **Partager** le lien. Chaque répondant indique sa fonction : les salariés ne voient que les questions d'usage (≈ 25), la direction et la personne qui gère l'informatique voient aussi les questions techniques. Les réponses sont enregistrées en brouillon au fil de l'eau.
 3. **Générer l'audit** : les réponses sont converties en niveaux COBIT, puis écart, criticité, priorité, risques, plan d'action et tableau de bord sont recalculés.
 

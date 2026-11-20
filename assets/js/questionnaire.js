@@ -191,7 +191,14 @@
     } catch (e) {
       message('Lien invalide', 'Le lien du questionnaire est incomplet ou erroné. Vérifiez qu\'il a été copié en entier.');
     }
+  } else if (/^#standard\b/.test(location.hash)) {
+    // Questionnaire standard : toutes les mesures du catalogue (ANSSI + CIS), sans campagne préalable.
+    var cat = window.SSI_CATALOG;
+    st.questions = cat.ANSSI.concat(cat.CIS).map(function (m) { return { id: m.id, texte: Q.questionText(m.id, m) }; });
+    start({ id: 'standard', titre: 'Questionnaire standard de sécurité informatique', organisation: '' });
   } else {
-    message('Aucun questionnaire n\'est indiqué', 'Utilisez le lien complet transmis par la personne qui réalise l\'audit de sécurité.');
+    message('Aucun questionnaire n\'est indiqué', 'Utilisez le lien complet transmis par la personne qui réalise l\'audit de sécurité, ou répondez au questionnaire standard.');
+    main.querySelector('.q-card').insertAdjacentHTML('beforeend', '<p><a class="btn primary" href="#standard">Répondre au questionnaire standard</a></p>');
   }
+  window.addEventListener('hashchange', function () { location.reload(); });
 })();

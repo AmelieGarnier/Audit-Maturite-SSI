@@ -541,6 +541,7 @@
   function campaignLink(c) {
     var base = location.href.split('#')[0].split('?')[0].replace(/[^\/]*$/, '') + 'questionnaire.html';
     if (S.mode === 'server' && c.token) return base + '?t=' + encodeURIComponent(c.token);
+    if (c.id === 'standard') return base + '#standard';
     return base + '#q=' + Q.encodeCampaign(c);
   }
   function campaignQuestionIds(a) {
@@ -562,9 +563,9 @@
   function viewQuestionnaire() {
     var a = state.audit;
     var cur = a.questionnaires.filter(function (c) { return c.id === state.campaign; })[0] || a.questionnaires[a.questionnaires.length - 1];
-    var html = head('Questionnaire', 'Auto-évaluation par lien : chaque personne répond en langage courant, les réponses génèrent automatiquement l\'audit.', '<button class="btn primary" data-act="new-campaign">Créer un questionnaire</button>');
+    var html = head('Questionnaire', 'Auto-évaluation par lien : chaque personne répond en langage courant, les réponses génèrent automatiquement l\'audit.', '<button class="btn primary" data-act="std-campaign">Questionnaire standard</button><button class="btn" data-act="new-campaign">Questionnaire personnalisé</button>');
     if (!a.questionnaires.length) {
-      main.innerHTML = html + '<div class="card empty"><h2>Aucun questionnaire</h2><ol class="steps"><li><b>Créez</b> un questionnaire : une question par mesure retenue (' + campaignQuestionIds(a).length + ' questions).</li><li><b>Partagez</b> le lien : les salariés ne voient que les questions d\'usage, la direction et l\'informatique voient aussi les questions techniques.</li><li><b>Générez l\'audit</b> : les réponses sont converties en niveaux COBIT et la matrice est recalculée.</li></ol>' +
+      main.innerHTML = html + '<div class="card empty"><h2>Aucun questionnaire</h2><ol class="steps"><li><b>Utilisez</b> le <b>questionnaire standard</b> (lien fixe, 62 questions ANSSI + CIS) ou <b>créez</b> un questionnaire personnalisé : une question par mesure retenue (' + campaignQuestionIds(a).length + ' questions).</li><li><b>Partagez</b> le lien : les salariés ne voient que les questions d\'usage, la direction et l\'informatique voient aussi les questions techniques.</li><li><b>Générez l\'audit</b> : les réponses sont converties en niveaux COBIT et la matrice est recalculée.</li></ol>' +
         (S.mode !== 'server' ? '<p class="note">Mode local : sur ce même navigateur, les réponses sont intégrées directement (bouton <b>Actualiser</b>). Ailleurs, le répondant télécharge un fichier <code>.json</code> à importer ici.</p>' : '') + '</div>';
       return;
     }
@@ -577,7 +578,7 @@
       (S.mode === 'server' && !cur.token ? '<p><button class="btn primary" data-act="publish-campaign">Publier sur le serveur</button></p>' :
         '<label>Lien à partager<div class="copy"><input readonly id="q-link" value="' + esc(link) + '"><button class="btn sm" data-act="copy-link">Copier</button><a class="btn sm ghost" href="' + esc(link) + '" target="_blank" rel="noopener">Ouvrir</a></div></label>') +
       '<div class="row-actions"><button class="btn" data-act="refresh-responses">Actualiser</button><button class="btn" data-act="import-responses">Importer des réponses (.json)</button><button class="btn ghost danger" data-act="del-campaign">Supprimer</button></div></div>' +
-      '<div class="card"><h2>Réponses : ' + (cur.reponses || []).length + '</h2><ul class="plain">' + Q.roles.map(function (r) { return '<li>' + esc(r.label) + ' : <b>' + (roles[r.v] || 0) + '</b></li>'; }).join('') + '</ul>' +
+      '<div class="card form"><h2>Réponses : ' + (cur.reponses || []).length + '</h2><ul class="plain">' + Q.roles.map(function (r) { return '<li>' + esc(r.label) + ' : <b>' + (roles[r.v] || 0) + '</b></li>'; }).join('') + '</ul>' +
       '<label>Agrégation<select data-bind="meta.agregation" data-rerender>' + opts([['mediane', 'Médiane (par défaut)'], ['min', 'Minimum (prudent)'], ['moyenne', 'Moyenne']], a.meta.agregation || 'mediane') + '</select></label>' +
       '<button class="btn primary block" data-act="apply-campaign"' + ((cur.reponses || []).length ? '' : ' disabled') + '>Générer l\'audit à partir des réponses</button>' +
       '<p class="muted small">Un audit issu d\'un questionnaire est déclaratif : à confirmer par l\'examen des preuves.</p></div></section>' +
@@ -728,6 +729,14 @@
           a.questionnaires.push(c); state.campaign = c.id; markDirty(); render();
         } }]);
     },
+    'std-campaign': function () {
+      var a = state.audit, c = a.questionnaires.filter(function (x) { return x.id === 'standard'; })[0];
+      if (!c) {
+        c = { id: 'standard', auditId: a.id, titre: 'Questionnaire standard', organisation: a.meta.organisation, questions: campaignQuestionIds(a).filter(function (id) { return id.indexOf('SPEC') !== 0; }), extra: {}, createdAt: today(), statut: 'ouvert', reponses: [] };
+        a.questionnaires.push(c); markDirty();
+      }
+      state.campaign = c.id; render();
+    },
     'sel-campaign': function (el) { state.campaign = el.dataset.id; render(); },
     'copy-link': function () {
       var i = $('#q-link'); i.select();
@@ -749,7 +758,7 @@
       pickFile('.json,application/json').then(function (files) {
         return Promise.all(files.map(readJsonFile)).then(function (arr) {
           var list = [];
-          arr.forEach(function (x) { (Array.isArray(x) ? x : [x]).forEach(function (r) { if (r && (!r.campaign || r.campaign === c.id)) list.push(r); }); });
+          arr.forEach(function (x) { (Array.isArray(x) ? x : [x]).forEach(function (r) { if (r && (!r.campaign || r.campaign === c.id || r.campaign === 'standard')) list.push(r); }); });
           var n = mergeResponses(c, list); if (n) markDirty(); render(); toast(n + ' réponse(s) importée(s).');
         });
       }).catch(function (e) { toast(e.message, 'err'); });
