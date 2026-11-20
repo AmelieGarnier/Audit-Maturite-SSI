@@ -12,7 +12,7 @@ On évalue chaque mesure de sécurité sur l'échelle COBIT 2019. L'outil calcul
 
 **SSI Audit a été conçu et développé par Amélie Garnier.**
 
-L'outil s'appuie sur un travail de groupe réalisé dans le cadre du **Mastère ERIS (ORT Toulouse)** : la *matrice d'audit de maturité SSI* du cas d'étude **Global Green**. Ce classeur Excel a été construit par le **Groupe ERIS 2** : Julien Escarre, Tommy Soler et Amélie Garnier.
+L'outil s'appuie sur un travail de groupe réalisé dans le cadre du **Mastère ERIS (ORT Toulouse)** : la *matrice d'audit de maturité SSI* du cas d'étude **Global Green**. Ce classeur Excel a été construit par le **Groupe ERIS 2 : Julien Escarre, Tommy Soler et Amélie Garnier.**
 
 Il contient le catalogue des mesures, les questions d'audit, les règles de calcul, le registre des preuves, la synthèse et le plan de déploiement. À partir de cette matrice, Amélie Garnier a créé une application réutilisable pour n'importe quelle organisation, avec plusieurs ajouts :
 
