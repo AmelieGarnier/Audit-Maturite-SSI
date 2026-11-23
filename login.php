@@ -49,7 +49,7 @@ $csrf = csrf_token();
 </head>
 <body class="login-page">
   <main class="login card">
-    <svg viewBox="0 0 32 32" width="44" height="44" aria-hidden="true"><path d="M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7z" fill="#1E5631"/><path d="m11 16 3.5 3.5L21.5 12" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg class="mark" viewBox="0 0 28 24" width="42" height="36" aria-hidden="true"><rect x="0" y="16" width="4" height="8" rx="1"/><rect x="6" y="12" width="4" height="12" rx="1"/><rect x="12" y="8" width="4" height="16" rx="1"/><rect x="18" y="4" width="4" height="20" rx="1" class="mark-off"/><rect x="24" y="0" width="4" height="24" rx="1" class="mark-off"/></svg>
     <h1>SSI Audit</h1>
     <p class="muted">Accès réservé aux auditeurs.</p>
     <form method="post" class="form" autocomplete="off">

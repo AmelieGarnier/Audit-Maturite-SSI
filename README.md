@@ -41,7 +41,7 @@ L'audit Global Green est fourni comme **jeu de démonstration**. Il reprend la m
 | **Questionnaire** | Questionnaire standard par lien fixe ou questionnaire personnalisé. Chaque personne (direction, informatique, salariés) répond en langage courant ; les réponses sont agrégées et **génèrent l'audit** |
 | **Matrice d'audit** | Fiche complète par point de contrôle : question, attendus, retenue (Oui / Allégée / Non) et justification, constat, causes, conséquences, points forts, couverture documentaire, preuves, fiabilité, règle écrite, niveau et cible COBIT, gravité, DICT, 8 méthodes de vérification, action corrective et suivi |
 | **Calculs automatiques** | Écart, criticité, priorité P1 à P3, risque initial, résiduel actuel et résiduel prévisionnel (gravité × vraisemblance) |
-| **Tableau de bord** | Radar par domaine, priorités, évolution du risque, cartographie gravité × vraisemblance, écarts, DICT, méthodes, trajectoire, top 10 des écarts. Chaque graphique est cliquable et ouvre la matrice filtrée |
+| **Tableau de bord** | Synthèse rédigée de l'audit, maturité par domaine sur l'échelle COBIT, priorités des écarts, évolution du risque, cartographie gravité × vraisemblance, critères DICT, méthodes de vérification, dix écarts les plus critiques. Chaque élément ouvre la matrice filtrée |
 | **Plan d'action** | Chantiers reliés aux mesures (actions clés, responsable, échéance, coût, indicateur de réussite), activités récurrentes, jalons et critères de passage, diagramme de Gantt |
 | **Preuves** | Registre PR-xx : type, source, date, statut de collecte, ce que la preuve établit, points de contrôle qui la citent |
 | **KPI** | Indicateurs manuels avec historique des mesures, et indicateurs calculés à partir de la matrice |
@@ -209,7 +209,8 @@ L'application est alors disponible sur <http://localhost:8080>.
 │   ├── data/catalog.js        Listes de valeurs, KPI par défaut
 │   ├── data/questions.js      Questions en langage courant et échelle de réponse
 │   ├── data/demo-globalgreen.js  Démonstration : audit Global Green (matrice v1.3)
-│   ├── css/style.css          Styles (thèmes clair et sombre)
+│   ├── css/style.css          Styles (thèmes clair et sombre, ordinateur et téléphone)
+│   ├── fonts/                 Police Archivo auto-hébergée (licence SIL OFL)
 │   └── vendor/chart.umd.min.js   Chart.js 4 (licence MIT)
 ├── tests/
 │   ├── calc.test.js           Tests du moteur
@@ -241,6 +242,7 @@ Les tests vérifient les règles de calcul. Ils comparent aussi l'outil à la **
 - **Conception et développement de l'outil :** Amélie Garnier.
 - **Matrice d'audit de maturité SSI Global Green** (classeur Excel d'origine, catalogue, méthode et jeu de démonstration) : Groupe ERIS 2, composé de Julien Escarre, Tommy Soler et Amélie Garnier. Mastère ERIS, ORT Toulouse.
 - **Chart.js** © Chart.js Contributors, licence MIT.
+- **Archivo** © The Archivo Project Authors, licence SIL Open Font License 1.1.
 
 ## Licence
 

@@ -9,6 +9,12 @@
 
   function esc(s) { return s === null || s === undefined ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function $(s, c) { return (c || document).querySelector(s); }
+  // Marche de l'échelle COBIT correspondant à la réponse (repère visuel, sans valeur pour « Je ne sais pas »).
+  function stairHtml(v) {
+    var n = typeof v === 'number' ? v : 0, h = '';
+    for (var k = 1; k <= 5; k++) h += '<i' + (k <= n ? ' class="on"' : '') + '></i>';
+    return '<span class="stair l' + n + '" aria-hidden="true">' + h + '</span>';
+  }
   function toast(msg, kind) {
     var t = document.createElement('div'); t.className = 'toast ' + (kind || ''); t.textContent = msg;
     $('#toasts').appendChild(t); setTimeout(function () { t.remove(); }, 4000);
@@ -70,7 +76,7 @@
       '<h1 class="q-question">' + esc(q.texte) + '</h1><form id="q-form"><div class="q-scale" role="radiogroup">' +
       Q.scale.map(function (s) {
         var sel = cur !== undefined && String(cur) === String(s.v);
-        return '<label class="q-opt' + (typeof s.v === 'string' ? ' alt' : '') + (sel ? ' sel' : '') + '"><input type="radio" name="v" value="' + esc(s.v) + '"' + (sel ? ' checked' : '') + '><span>' + esc(s.label) + '</span></label>';
+        return '<label class="q-opt' + (typeof s.v === 'string' ? ' alt' : '') + (sel ? ' sel' : '') + '"><input type="radio" name="v" value="' + esc(s.v) + '"' + (sel ? ' checked' : '') + '>' + stairHtml(s.v) + '<span>' + esc(s.label) + '</span></label>';
       }).join('') + '</div>' +
       '<details' + (st.comments[id] ? ' open' : '') + '><summary>Ajouter un commentaire</summary><textarea name="c" rows="3" maxlength="1000">' + esc(st.comments[id] || '') + '</textarea></details>' +
       '<div class="q-nav"><button type="button" class="btn ghost" id="q-prev">' + (st.idx ? '← Précédente' : '← Fonction') + '</button>' +

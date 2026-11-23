@@ -25,7 +25,7 @@
   var NON_RETENU = [['partieNonRetenue', 'Partie non retenue'], ['justificationDetaillee', 'Justification détaillée'], ['risqueAssocie', 'Risque associé'],
     ['mesureCompensatoire', 'Mesure compensatoire'], ['risqueResiduelAccepte', 'Risque résiduel accepté'], ['acceptePar', 'Accepté par'],
     ['conditionsReevaluation', 'Conditions de réévaluation ou d\'évolution'], ['prochaineReevaluation', 'Prochaine réévaluation']];
-  var COLORS = { green: '#1E5631', green2: '#4C9A2A', light: '#A4DE02', blue: '#2F6690', orange: '#E07A1F', red: '#B3261E', yellow: '#D4A017', grey: '#8A8F98' };
+  var COLORS = { green: '#1F4F82', green2: '#2E8B6E', light: '#7DAA4C', blue: '#1F6680', orange: '#DD6B20', red: '#B42318', yellow: '#E3B23C', grey: '#6A7783' };
   var RISK_COLORS = { 'Critique': COLORS.red, 'Élevé': COLORS.orange, 'Moyen': COLORS.yellow, 'Faible': COLORS.green2 };
   var PRIO_COLORS = { P1: COLORS.red, P2: COLORS.orange, P3: COLORS.yellow, OK: COLORS.green2 };
 
@@ -45,12 +45,27 @@
   }
   function levelOpts(cur, allowEmpty) {
     var l = allowEmpty ? [['', '— non évalué']] : [];
-    for (var i = 0; i <= 5; i++) l.push([String(i), i + ' · ' + C.COBIT[i]]);
+    for (var i = 0; i <= 5; i++) l.push([String(i), i + ' : ' + C.COBIT[i]]);
     return opts(l, cur === null || cur === undefined ? '' : String(cur));
+  }
+  /** Escalier de maturité : 5 marches (niveaux 1 à 5), remplies jusqu'au niveau, cible encadrée. */
+  function stair(v, target, size) {
+    var hasV = v !== null && v !== undefined && !isNaN(v);
+    var lv = hasV ? Math.max(0, Math.min(5, +v)) : 0, t = target === null || target === undefined ? null : Math.round(+target);
+    var html = '';
+    for (var k = 1; k <= 5; k++) {
+      var cls = '', st = '';
+      if (hasV && lv >= k) cls = 'on';
+      else if (hasV && lv > k - 1) { cls = 'part'; st = ' style="--f:' + C.round(lv - (k - 1), 2) + '"'; }
+      if (t === k) cls += ' tgt';
+      html += '<i' + (cls ? ' class="' + cls.trim() + '"' : '') + st + '></i>';
+    }
+    var label = hasV ? 'Niveau ' + String(C.round(lv, 2)).replace('.', ',') + ' sur 5' + (t !== null ? ', cible ' + t : '') : 'Non évalué';
+    return '<span class="stair ' + (size || '') + ' l' + (hasV ? Math.floor(lv + 1e-9) : 0) + '" role="img" aria-label="' + esc(label) + '">' + html + '</span>';
   }
   function badge(text, cls) { return text ? '<span class="badge ' + esc(cls || '') + '">' + esc(text) + '</span>' : '<span class="muted">—</span>'; }
   function prioBadge(p) { return p ? badge(p, 'b-' + slug(p)) : badge(''); }
-  function riskBadge(score) { var n = C.niveauRisque(score); return score === null || score === undefined ? badge('') : '<span class="badge b-r-' + esc(slug(n)) + '">' + score + ' · ' + esc(n) + '</span>'; }
+  function riskBadge(score) { var n = C.niveauRisque(score); return score === null || score === undefined ? badge('') : '<span class="badge b-r-' + esc(slug(n)) + '">' + esc(n) + ' (' + score + ')</span>'; }
   function slug(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
   function download(name, blob) {
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
@@ -135,15 +150,16 @@
   function item(id) { return state.audit.items.filter(function (i) { return i.id === id; })[0]; }
 
   function markDirty() {
-    var s = $('#save-state'); s.dataset.state = 'pending'; s.textContent = 'Modifications…';
+    var s = $('#save-state'); s.dataset.state = 'pending'; s.textContent = 'Modifications en cours'; $('#top-save').dataset.state = 'pending';
     clearTimeout(state.saveTimer);
     state.saveTimer = setTimeout(save, 600);
   }
   function save() {
     if (!state.audit) return Promise.resolve();
     var s = $('#save-state');
-    return S.save(state.audit).then(function () { s.dataset.state = 'ok'; s.textContent = 'Enregistré'; })
-      .catch(function (e) { s.dataset.state = 'err'; s.textContent = 'Échec de l\'enregistrement'; toast(e.message, 'err'); });
+    var t = $('#top-save');
+    return S.save(state.audit).then(function () { s.dataset.state = 'ok'; s.textContent = 'Enregistré'; t.dataset.state = 'ok'; })
+      .catch(function (e) { s.dataset.state = 'err'; s.textContent = 'Échec de l\'enregistrement'; t.dataset.state = 'err'; toast(e.message, 'err'); });
   }
 
   function freshDemo() { return normalize(clone(window.SSI_DEMO)); }
@@ -161,11 +177,14 @@
   function updateChrome() {
     var a = state.audit;
     $('#audit-name').textContent = a ? a.meta.organisation : 'Aucun audit ouvert';
-    $('#audit-sub').textContent = a ? ('Audit du ' + fmtDate(a.meta.dateAudit) + (a.meta.demo ? ' · démo' : '')) : '';
+    $('#audit-sub').textContent = a ? ('Audit du ' + fmtDate(a.meta.dateAudit) + (a.meta.demo ? ', démonstration' : '')) : '';
+    $('#top-audit').textContent = a ? a.meta.organisation : 'SSI Audit';
+    var cur = VIEWS.filter(function (v) { return v[0] === state.view; })[0];
+    $('#top-view').textContent = cur ? cur[1] : '';
     $$('[data-need-audit]').forEach(function (b) { b.disabled = !a; });
     $('#nav').innerHTML = VIEWS.map(function (v) {
       var dis = !a && v[0] !== 'audits';
-      return '<a href="#/' + v[0] + '" class="' + (state.view === v[0] ? 'active' : '') + (dis ? ' disabled' : '') + '"' + (dis ? ' aria-disabled="true" tabindex="-1"' : '') + '><span aria-hidden="true">' + v[2] + '</span>' + esc(v[1]) + '</a>';
+      return '<a href="#/' + v[0] + '" class="' + (state.view === v[0] ? 'active' : '') + (dis ? ' disabled' : '') + '"' + (dis ? ' aria-disabled="true" tabindex="-1"' : '') + '>' + esc(v[1]) + '</a>';
     }).join('');
   }
 
@@ -191,7 +210,7 @@
   function render() {
     destroyCharts();
     updateChrome();
-    document.body.classList.remove('nav-open');
+    document.body.classList.remove('nav-open'); $('#menu-toggle').setAttribute('aria-expanded', 'false');
     var fn = { audits: viewAudits, tableau: viewTableau, organisation: viewOrganisation, questionnaire: viewQuestionnaire, matrice: viewMatrice, plan: viewPlan, preuves: viewPreuves, kpi: viewKpi }[state.view];
     try { fn(); } catch (e) { main.innerHTML = '<div class="card err">Erreur d\'affichage : ' + esc(e.message) + '</div>'; if (window.console) console.error(e); }
     main.scrollTop = 0;
@@ -211,8 +230,8 @@
       if (!list.length) { el.innerHTML = '<div class="empty card"><h2>Aucun audit pour l\'instant</h2><p>Commencez par <b>Nouvel audit</b> ou explorez le cas <b>Global Green</b> avec <b>Charger la démo</b>.</p></div>'; return; }
       el.innerHTML = list.map(function (a) {
         var cur = state.audit && state.audit.id === a.id;
-        return '<article class="card audit-card' + (cur ? ' current' : '') + '"><h2>' + esc(a.organisation) + (a.demo ? ' <span class="badge b-demo">démo</span>' : '') + '</h2>' +
-          '<p class="muted">Audit du ' + esc(fmtDate(a.dateAudit)) + (a.modifieLe ? ' · modifié le ' + esc(fmtDate(a.modifieLe)) : '') + '</p>' +
+        return '<article class="card audit-card' + (cur ? ' current' : '') + '"><h2>' + esc(a.organisation) + (a.demo ? ' <span class="badge b-demo">Démonstration</span>' : '') + '</h2>' +
+          '<p class="muted">Audit du ' + esc(fmtDate(a.dateAudit)) + (a.modifieLe ? ', modifié le ' + esc(fmtDate(a.modifieLe)) : '') + '</p>' +
           '<div class="row-actions"><button class="btn primary sm" data-act="open-audit" data-id="' + esc(a.id) + '">' + (cur ? 'Ouvert' : 'Ouvrir') + '</button>' +
           '<button class="btn sm" data-act="dup-audit" data-id="' + esc(a.id) + '">Dupliquer</button>' +
           '<button class="btn sm ghost danger" data-act="del-audit" data-id="' + esc(a.id) + '">Supprimer</button></div></article>';
@@ -235,16 +254,44 @@
   }
 
   // ---------- Vue : tableau de bord ----------
+  function cssVar(name, fallback) { var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v || fallback; }
+  var SRC_TITLE = { ANSSI: 'Guide d\'hygiène de l\'ANSSI', CIS: 'Guide CIS : box et réseau', SPEC: 'Logiciels et contrôles spécifiques' };
   function viewTableau() {
     var a = state.audit, s = C.summary(a);
-    var tiles = [
-      ['Maturité moyenne', fmt(s.maturite, 2) + ' <small>/ 5</small>', ['ANSSI', 'CIS', 'SPEC'].filter(function (k) { return s.parSource[k] && s.parSource[k].niveau !== null; }).map(function (k) { return SRC_LABEL[k] + ' ' + fmt(s.parSource[k].niveau, 2); }).join(' · ') + ' · cible ' + fmt(s.cibleMoyenne, 2)],
-      ['Points à la cible', fmt(s.conformite) + ' <small>%</small>', s.evalues + ' évalués sur ' + s.retenus + ' retenus'],
-      ['Écarts P1', String(s.priorites.P1), 'P2 : ' + s.priorites.P2 + ' · P3 : ' + s.priorites.P3],
-      ['Score de risque moyen', fmt(s.risque.points ? s.risque.initial / s.risque.points : null, 2) + ' <small>/ 16</small>', 'Actuel ' + fmt(s.risque.points ? s.risque.actuel / s.risque.points : null, 2) + ' · après plan ' + fmt(s.risque.points ? s.risque.apres / s.risque.points : null, 2)],
-      ['Actions réalisées', fmt(s.actions.taux) + ' <small>%</small>', s.actions.realisees + ' sur ' + s.actions.total]
-    ];
-    var heat = '<table class="heat"><caption>Gravité × vraisemblance (nombre de points)</caption><thead><tr><th></th>' + [1, 2, 3, 4].map(function (v) { return '<th>V' + v + '</th>'; }).join('') + '</tr></thead><tbody>';
+    var rp = s.risque.points || 0;
+    var avg = function (x) { return rp ? x / rp : null; };
+    var text = !s.evalues
+      ? 'Aucun point n\'est encore évalué. Renseignez la <a href="#/matrice">matrice</a> ou diffusez le <a href="#/questionnaire">questionnaire</a> pour obtenir un premier état des lieux.'
+      : 'Sur <strong>' + s.retenus + '</strong> points de contrôle retenus, <strong>' + s.priorites.P1 + '</strong> écarts critiques sont à traiter dans les 3 mois et <strong>' + s.priorites.P2 + '</strong> dans les 6 mois. ' +
+        'Une fois le plan d\'action achevé, le score de risque moyen passerait de <strong>' + fmt(avg(s.risque.initial), 1) + '</strong> à <strong>' + fmt(avg(s.risque.apres), 1) + '</strong> sur 16.';
+    var lead = '<section class="lead" aria-label="Synthèse">' +
+      '<div class="lead-score">' + stair(s.maturite, s.cibleMoyenne, 'lg') +
+      '<p class="lead-n"><b>' + fmt(s.maturite, 2) + '</b><span>maturité moyenne sur 5</span></p></div>' +
+      '<p class="lead-text">' + text + '</p>' +
+      '<dl class="facts"><div><dt>Cible moyenne</dt><dd>' + fmt(s.cibleMoyenne, 2) + '</dd></div>' +
+      '<div><dt>Points à la cible</dt><dd>' + fmt(s.conformite) + ' %</dd></div>' +
+      '<div><dt>Actions réalisées</dt><dd>' + s.actions.realisees + ' sur ' + s.actions.total + '</dd></div>' +
+      '<div><dt>Preuves collectées</dt><dd>' + s.preuves.collectees + ' sur ' + s.preuves.total + '</dd></div></dl></section>';
+
+    var dom = '';
+    ['ANSSI', 'CIS', 'SPEC'].forEach(function (src) {
+      var rows = s.parDomaine.filter(function (d) { return d.src === src; });
+      if (!rows.length) return;
+      dom += '<h3>' + esc(SRC_TITLE[src]) + '</h3><ul class="domains">' + rows.map(function (d) {
+        return '<li data-act="filter-dom" data-src="' + esc(d.src) + '" data-dom="' + esc(d.domaine) + '" tabindex="0" title="Ouvrir ces points dans la matrice">' +
+          '<span class="d-name">' + esc(d.domaine) + '</span>' + stair(d.niveau, d.cible, 'md') +
+          '<span class="d-val"><b>' + fmt(d.niveau, 2) + '</b> cible ' + fmt(d.cible, 1) + '</span></li>';
+      }).join('') + '</ul>';
+    });
+
+    var pk = [['P1', 'Critiques, sous 3 mois', '--r-crit'], ['P2', 'Importants, sous 6 mois', '--r-high'], ['P3', 'À planifier, sous 12 mois', '--r-mid'], ['OK', 'Cible atteinte', '--r-low']];
+    var totP = pk.reduce(function (t, k) { return t + (s.priorites[k[0]] || 0); }, 0);
+    var prio = totP ? '<div class="prio-bar">' + pk.filter(function (k) { return s.priorites[k[0]]; }).map(function (k) {
+      return '<button data-act="filter-prio" data-p="' + k[0] + '" style="flex:' + s.priorites[k[0]] + ';background:var(' + k[2] + ')' + (k[0] === 'P3' ? ';color:#2B2100' : '') + '" title="' + esc(k[1]) + '">' + s.priorites[k[0]] + '</button>';
+    }).join('') + '</div><ul class="prio-legend">' + pk.map(function (k) { return '<li><i style="background:var(' + k[2] + ')"></i>' + k[0] + ' : ' + esc(k[1]) + ' (' + (s.priorites[k[0]] || 0) + ')</li>'; }).join('') + '</ul>'
+      : '<p class="muted">Aucun point évalué.</p>';
+
+    var heat = '<table class="heat"><caption>Nombre de points par gravité (lignes) et vraisemblance (colonnes)</caption><thead><tr><th></th>' + [1, 2, 3, 4].map(function (v) { return '<th>V' + v + '</th>'; }).join('') + '</tr></thead><tbody>';
     [4, 3, 2, 1].forEach(function (g) {
       heat += '<tr><th>' + esc(C.GRAVITES[4 - g]) + '</th>';
       [1, 2, 3, 4].forEach(function (v) {
@@ -254,71 +301,41 @@
       heat += '</tr>';
     });
     heat += '</tbody></table>';
-    main.innerHTML = head('Tableau de bord', esc(a.meta.organisation) + ' · audit du ' + esc(fmtDate(a.meta.dateAudit)) + ' · cliquez sur un graphique pour ouvrir la matrice filtrée') +
-      (s.evalues ? '' : '<div class="card note">Aucun point n\'est encore évalué : renseignez la <a href="#/matrice">matrice</a> ou utilisez le <a href="#/questionnaire">questionnaire</a>.</div>') +
-      '<section class="tiles">' + tiles.map(function (t) { return '<div class="tile"><span>' + esc(t[0]) + '</span><b>' + t[1] + '</b><small>' + esc(t[2]) + '</small></div>'; }).join('') + '</section>' +
+
+    var dk = [['D', 'Disponibilité'], ['I', 'Intégrité'], ['C', 'Confidentialité'], ['T', 'Traçabilité']];
+    var dict = '<ul class="domains">' + dk.map(function (k) {
+      var d = s.dict[k[0]];
+      return '<li data-act="filter-dict" data-k="' + k[0] + '" tabindex="0"><span class="d-name">' + esc(k[1]) + ' <span class="d-src">' + ((d.anssi || 0) + (d.cis || 0)) + ' mesures</span></span>' + stair(d.niveau, d.cible, 'md') + '<span class="d-val"><b>' + fmt(d.niveau, 2) + '</b> cible ' + fmt(d.cible, 1) + '</span></li>';
+    }).join('') + '</ul>';
+
+    var mk = Object.keys(s.methodes).sort(function (x, y) { return s.methodes[y] - s.methodes[x]; });
+    var maxM = mk.length ? s.methodes[mk[0]] : 1;
+    var meth = mk.length ? '<ul class="hbars">' + mk.map(function (m) {
+      return '<li data-act="filter-meth" data-m="' + esc(m) + '" tabindex="0"><span>' + esc(m) + '</span><span class="hb-track"><i style="width:' + Math.round(100 * s.methodes[m] / maxM) + '%"></i></span><span class="hb-n">' + s.methodes[m] + '</span></li>';
+    }).join('') + '</ul>' : '<p class="muted">Aucune méthode renseignée.</p>';
+
+    main.innerHTML = head('Tableau de bord', 'Audit de ' + esc(a.meta.organisation) + ' du ' + esc(fmtDate(a.meta.dateAudit)) + '. Chaque élément ouvre la matrice filtrée.') +
+      lead +
       '<section class="grid2">' +
-      '<div class="card chart-card wide"><h2>Maturité par domaine</h2><div class="chart tall"><canvas id="ch-radar" aria-label="Radar de maturité par domaine"></canvas></div></div>' +
-      '<div class="card chart-card"><h2>Priorités</h2><div class="chart"><canvas id="ch-prio"></canvas></div></div>' +
-      '<div class="card chart-card"><h2>Évolution du risque</h2><div class="chart"><canvas id="ch-risk"></canvas></div></div>' +
-      '<div class="card chart-card"><h2>Cartographie des risques</h2>' + heat + '</div>' +
-      '<div class="card chart-card"><h2>Écarts par domaine</h2><div class="chart"><canvas id="ch-gap"></canvas></div></div>' +
-      '<div class="card chart-card"><h2>Maturité par critère DICT</h2><div class="chart"><canvas id="ch-dict"></canvas></div></div>' +
-      '<div class="card chart-card"><h2>Méthodes d\'évaluation</h2><div class="chart"><canvas id="ch-meth"></canvas></div></div>' +
-      '<div class="card chart-card"><h2>Trajectoire de maturité</h2><div class="chart"><canvas id="ch-traj"></canvas></div></div>' +
-      '<div class="card wide"><h2>Top 10 des écarts</h2>' + (s.top10.length ? '<div class="table-wrap"><table class="table"><thead><tr><th>Point</th><th>Intitulé</th><th>Écart</th><th>Criticité</th><th>Priorité</th></tr></thead><tbody>' +
-        s.top10.map(function (t) { return '<tr class="clickable" data-act="open-item" data-id="' + esc(t.id) + '"><td class="mono">' + esc(t.id) + '</td><td>' + esc(t.titre) + '</td><td>' + t.ecart + '</td><td>' + t.criticite + '</td><td>' + prioBadge(t.priorite) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="muted">Aucun écart.</p>') + '</div>' +
+      '<div class="card"><h2>Maturité par domaine</h2>' + dom + '</div>' +
+      '<div><div class="card"><h2>Priorités des écarts</h2>' + prio + '</div>' +
+      '<div class="card"><h2>Évolution du risque</h2><div class="chart"><canvas id="ch-risk" aria-label="Nombre de points par niveau de risque : initial, actuel et après le plan"></canvas></div></div>' +
+      '<div class="card"><h2>Cartographie des risques</h2>' + heat + '</div></div>' +
+      '<div class="card"><h2>Critères DICT</h2>' + dict + '</div>' +
+      '<div class="card"><h2>Méthodes de vérification</h2>' + meth + '</div>' +
+      '<div class="card wide"><h2>Les dix écarts les plus critiques</h2>' + (s.top10.length ? '<div class="table-wrap"><table class="table"><thead><tr><th>Réf.</th><th>Mesure</th><th>Écart</th><th class="hide-m">Criticité</th><th>Priorité</th></tr></thead><tbody>' +
+        s.top10.map(function (t) { var it = item(t.id); return '<tr class="clickable" data-act="open-item" data-id="' + esc(t.id) + '" tabindex="0"><td class="ref">' + esc(it ? refLabel(it) : t.id) + '</td><td>' + esc(t.titre) + '</td><td>' + t.ecart + '</td><td class="hide-m">' + t.criticite + '</td><td>' + prioBadge(t.priorite) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="muted">Aucun écart.</p>') + '</div>' +
       '</section>';
 
-    var dom = s.parDomaine;
-    var labels = dom.map(function (d) { return (d.src === 'ANSSI' ? '' : SRC_LABEL[d.src] + ' · ') + d.domaine; });
-    chart('ch-radar', {
-      type: 'radar',
-      data: { labels: labels, datasets: [
-        { label: 'Niveau constaté', data: dom.map(function (d) { return d.niveau; }), borderColor: COLORS.orange, backgroundColor: 'rgba(224,122,31,.18)', pointRadius: 3 },
-        { label: 'Niveau actuel', data: dom.map(function (d) { return d.courant; }), borderColor: COLORS.blue, backgroundColor: 'rgba(47,102,144,.10)', pointRadius: 3 },
-        { label: 'Cible', data: dom.map(function (d) { return d.cible; }), borderColor: COLORS.green2, backgroundColor: 'rgba(30,86,49,.06)', borderDash: [5, 4], pointRadius: 2 }
-      ] },
-      options: { maintainAspectRatio: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, backdropColor: 'transparent' }, pointLabels: { font: { size: 10 } } } },
-        onClick: function (e, els) { if (els.length) go('matrice', { domaine: dom[els[0].index].domaine, src: dom[els[0].index].src }); } }
-    });
-    var pk = ['P1', 'P2', 'P3', 'OK'];
-    chart('ch-prio', {
-      type: 'doughnut',
-      data: { labels: pk, datasets: [{ data: pk.map(function (k) { return s.priorites[k]; }), backgroundColor: pk.map(function (k) { return PRIO_COLORS[k]; }) }] },
-      options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, onClick: function (e, els) { if (els.length) go('matrice', { priorite: pk[els[0].index] }); } }
-    });
-    var rk = ['Critique', 'Élevé', 'Moyen', 'Faible'];
+    var rk = ['Critique', 'Élevé', 'Moyen', 'Faible'], rv = ['--r-crit', '--r-high', '--r-mid', '--r-low'];
     chart('ch-risk', {
       type: 'bar',
-      data: { labels: ['Initial', 'Actuel', 'Après plan'], datasets: rk.map(function (k) {
-        return { label: k, backgroundColor: RISK_COLORS[k], data: ['initial', 'actuel', 'apres'].map(function (p) { return s.classesRisque[p][k] || 0; }) };
+      data: { labels: ['Initial', 'Actuel', 'Après le plan'], datasets: rk.map(function (k, i) {
+        return { label: k, backgroundColor: cssVar(rv[i], '#888'), borderRadius: 2, data: ['initial', 'actuel', 'apres'].map(function (p) { return s.classesRisque[p][k] || 0; }) };
       }) },
-      options: { maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Points de contrôle' } } },
+      options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12 } } },
+        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Points de contrôle' } } },
         onClick: function (e, els) { if (els.length) go('matrice', { risque: rk[els[0].datasetIndex] }); } }
-    });
-    chart('ch-gap', {
-      type: 'bar',
-      data: { labels: labels, datasets: [{ label: 'Écart moyen à la cible', backgroundColor: COLORS.orange, data: dom.map(function (d) { return d.niveau === null || d.cible === null ? null : C.round(Math.max(0, d.cible - d.niveau), 2); }) }] },
-      options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 5 }, y: { ticks: { font: { size: 10 } } } },
-        onClick: function (e, els) { if (els.length) go('matrice', { domaine: dom[els[0].index].domaine, src: dom[els[0].index].src }); } }
-    });
-    var dk = ['D', 'I', 'C', 'T'], dl = ['Disponibilité', 'Intégrité', 'Confidentialité', 'Traçabilité'];
-    chart('ch-dict', {
-      type: 'bar',
-      data: { labels: dl, datasets: [{ label: 'Maturité moyenne', data: dk.map(function (k) { return s.dict[k].niveau === null ? null : C.round(s.dict[k].niveau, 2); }), backgroundColor: [COLORS.blue, COLORS.green2, COLORS.green, COLORS.orange] }] },
-      options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 5 } }, onClick: function (e, els) { if (els.length) go('matrice', { dict: dk[els[0].index] }); } }
-    });
-    var mk = Object.keys(s.methodes);
-    chart('ch-meth', {
-      type: 'bar',
-      data: { labels: mk, datasets: [{ label: 'Points', data: mk.map(function (k) { return s.methodes[k]; }), backgroundColor: COLORS.green2 }] },
-      options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, onClick: function (e, els) { if (els.length) go('matrice', { methode: mk[els[0].index] }); } }
-    });
-    chart('ch-traj', {
-      type: 'line',
-      data: { labels: ['Audit initial', 'Aujourd\'hui', 'Après plan'], datasets: [{ label: 'Maturité moyenne', data: [s.maturite, s.maturiteCourante, s.cibleMoyenne], borderColor: COLORS.green2, backgroundColor: 'rgba(76,154,42,.15)', fill: true, tension: 0.25 }] },
-      options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 5 } } }
     });
   }
 
@@ -385,7 +402,7 @@
     var rows = a.items.filter(function (it) { return refs[it.src] !== false; }).map(function (it) { return { it: it, c: C.compute(it) }; })
       .filter(function (r) { return matchFilters(r.it, r.c, f); });
     var extra = ['risque', 'dict', 'methode', 'heat', 'verifier'].filter(function (k) { return f[k]; });
-    main.innerHTML = head('Matrice d\'audit', rows.length + ' point(s) de contrôle affiché(s) · cliquez sur une ligne pour ouvrir sa fiche',
+    main.innerHTML = head('Matrice d\'audit', rows.length + (rows.length > 1 ? ' points de contrôle affichés.' : ' point de contrôle affiché.') + ' Ouvrez une ligne pour l\'évaluer.',
       '<button class="btn" data-act="add-spec">Ajouter un contrôle spécifique</button>') +
       '<div class="filters card">' +
       '<input type="search" id="flt-q" placeholder="Rechercher…" value="' + esc(f.q || '') + '" aria-label="Rechercher">' +
@@ -395,16 +412,16 @@
       '<select data-filter="retenue" aria-label="Retenue">' + opts([['', 'Retenue : toutes'], ['Oui', 'Retenue'], ['Allégée', 'Allégée'], ['Non', 'Non retenue']], f.retenue || '') + '</select>' +
       (extra.length ? '<span class="chip">Filtre : ' + esc(extra.map(function (k) { return k === 'verifier' ? 'à vérifier' : k + ' = ' + f[k]; }).join(', ')) + '</span>' : '') +
       '<button class="btn ghost sm" data-act="clear-filters">Effacer les filtres</button></div>' +
-      '<div class="table-wrap card"><table class="table matrix"><thead><tr><th>Réf.</th><th>Recommandation</th><th title="Niveau COBIT actuel">Niv.</th><th>Cible</th><th>Écart</th><th>Risque</th><th>Crit.</th><th>Priorité</th><th>Risque actuel</th><th>Fiabilité</th><th>Action</th></tr></thead><tbody>' +
+      '<div class="table-wrap card"><table class="table matrix"><thead><tr><th>Réf.</th><th>Mesure</th><th>Niveau et cible</th><th class="hide-m">Écart</th><th class="hide-m">Gravité</th><th class="hide-m">Criticité</th><th>Priorité</th><th class="hide-m">Risque actuel</th><th class="hide-m">Fiabilité</th><th class="hide-m">Action</th></tr></thead><tbody>' +
       (rows.length ? rows.map(function (r) {
         var it = r.it, c = r.c;
         return '<tr class="clickable' + (it.retenue === false ? ' excluded' : '') + '" data-act="open-item" data-id="' + esc(it.id) + '" tabindex="0">' +
-          '<td class="mono">' + esc(refLabel(it)) + (it.aVerifier ? ' <span title="À vérifier en entretien">⚠</span>' : '') + (it.allegee ? ' <span class="badge b-muted" title="Retenue sous forme allégée">allégée</span>' : '') + '</td>' +
-          '<td><b>' + esc(it.titre) + '</b><small class="muted block">' + esc(it.domaine) + (it.domaineSecurite ? ' · ' + esc(it.domaineSecurite) : '') + '</small></td>' +
-          '<td>' + (c.evalue ? '<span class="lvl l' + it.niveau + '">' + it.niveau + '</span>' : '<span class="muted">—</span>') + '</td>' +
-          '<td>' + fmt(it.cible) + '</td><td>' + fmt(c.ecart) + '</td><td>' + badge(it.gravite, 'b-r-' + slug(it.gravite)) + '</td><td>' + fmt(c.criticite) + '</td><td>' + prioBadge(c.priorite) + '</td>' +
-          '<td>' + riskBadge(c.risqueActuel) + '</td><td>' + esc(it.fiabilite || '—') + '</td><td>' + (it.action ? esc(C.estRealisee(it) ? 'Réalisée' : it.statutAction) : '<span class="muted">—</span>') + '</td></tr>';
-      }).join('') : '<tr><td colspan="11" class="muted center">Aucun point ne correspond aux filtres.</td></tr>') +
+          '<td class="ref">' + esc(refLabel(it)) + (it.aVerifier ? ' <span title="À vérifier en entretien">⚠</span>' : '') + '</td>' +
+          '<td><b>' + esc(it.titre) + '</b><small class="muted block">' + esc(it.domaine) + (it.domaineSecurite ? ', ' + esc(it.domaineSecurite) : '') + (it.allegee ? ' (retenue sous forme allégée)' : '') + '</small></td>' +
+          '<td><span class="lvl-cell">' + stair(c.evalue ? it.niveau : null, it.cible) + (c.evalue ? '<b>' + it.niveau + '</b>' : '<small>non évalué</small>') + (C.isLevel(it.cible) ? '<small>cible ' + it.cible + '</small>' : '') + '</span></td>' +
+          '<td class="hide-m">' + fmt(c.ecart) + '</td><td class="hide-m">' + badge(it.gravite, 'b-r-' + slug(it.gravite)) + '</td><td class="hide-m">' + fmt(c.criticite) + '</td><td>' + prioBadge(c.priorite) + '</td>' +
+          '<td class="hide-m">' + riskBadge(c.risqueActuel) + '</td><td class="hide-m">' + esc(it.fiabilite || '—') + '</td><td class="hide-m">' + (it.action ? esc(C.estRealisee(it) ? 'Réalisée' : it.statutAction) : '<span class="muted">—</span>') + '</td></tr>';
+      }).join('') : '<tr><td colspan="10" class="muted">Aucun point ne correspond aux filtres. <button class="link" data-act="clear-filters">Effacer les filtres</button></td></tr>') +
       '</tbody></table></div>';
   }
 
@@ -415,9 +432,9 @@
     var it = item(id); if (!it) return;
     state.drawerId = id;
     var d = $('#drawer'), scroll = d.classList.contains('open') ? ($('.drawer-body', d) || {}).scrollTop : 0;
-    var chantiers = [['', '—']].concat(state.audit.chantiers.filter(function (c) { return c.type !== 'recurrent'; }).map(function (c) { return [c.id, c.id + ' · ' + c.titre]; }));
+    var chantiers = [['', '—']].concat(state.audit.chantiers.filter(function (c) { return c.type !== 'recurrent'; }).map(function (c) { return [c.id, c.id + ' ' + c.titre]; }));
     var spec = it.src === 'SPEC', nr = it.nonRetenu || {};
-    d.innerHTML = '<div class="drawer-head"><div><span class="mono muted">' + esc(refLabel(it)) + ' · ' + esc(SRC_LABEL[it.src]) + '</span><h2>' + esc(it.titre) + '</h2></div><button class="icon-btn" data-act="close-drawer" aria-label="Fermer">✕</button></div>' +
+    d.innerHTML = '<div class="drawer-head"><div><span class="ref">' + esc(refLabel(it)) + '</span><h2>' + esc(it.titre) + '</h2></div><button class="icon-btn" data-act="close-drawer" aria-label="Fermer la fiche">✕</button></div>' +
       '<div class="drawer-body form" data-item="' + esc(it.id) + '">' +
       '<div id="calc-box" class="calc-box"></div>' +
       '<div class="cols2"><label>Retenue<select data-retenue>' + opts(LISTES.retenue, retenueLabel(it)) + '</select></label>' +
@@ -440,7 +457,7 @@
       '<label>Fiabilité de la preuve<select data-ibind="fiabilite">' + opts(FIABILITES, it.fiabilite) + '</select></label>' +
       '<fieldset class="inline"><legend>Méthodes de vérification</legend>' + METHODES.map(function (m) { return '<label class="check"><input type="checkbox" data-ibind-list="methodes" value="' + esc(m) + '"' + (it.methodes.indexOf(m) >= 0 ? ' checked' : '') + '> ' + esc(m) + '</label>'; }).join('') + '</fieldset>' +
       ANALYSE.filter(function (k) { return !spec || (k[0] !== 'pointsForts' && k[0] !== 'couverture' && k[0] !== 'analyseCobit'); }).map(function (k) { return tarea(k[0], k[1], k[2], it[k[0]]); }).join('') +
-      '<fieldset class="inline"><legend>Preuves collectées (registre)</legend>' + (state.audit.preuves.length ? state.audit.preuves.map(function (p) { return '<label class="check"><input type="checkbox" data-ibind-list="preuves" value="' + esc(p.id) + '"' + (it.preuves.indexOf(p.id) >= 0 ? ' checked' : '') + '> ' + esc(p.id) + ' · ' + esc(p.titre) + '</label>'; }).join('') : '<span class="muted">Aucune preuve au registre. <a href="#/preuves">Ajouter une preuve</a></span>') + '</fieldset>' +
+      '<fieldset class="inline"><legend>Preuves collectées (registre)</legend>' + (state.audit.preuves.length ? state.audit.preuves.map(function (p) { return '<label class="check"><input type="checkbox" data-ibind-list="preuves" value="' + esc(p.id) + '"' + (it.preuves.indexOf(p.id) >= 0 ? ' checked' : '') + '> ' + esc(p.id) + ' ' + esc(p.titre) + '</label>'; }).join('') : '<span class="muted">Aucune preuve au registre. <a href="#/preuves">Ajouter une preuve</a></span>') + '</fieldset>' +
       '<h3>Action corrective et suivi</h3>' +
       tarea('action', 'Action corrective proposée', 3, it.action) +
       '<div class="cols2">' + tinput('responsable', 'Responsable', it.responsable) + tinput('echeance', 'Échéance (date ou « Mars 2027 », « Immédiat »…)', it.echeance) +
@@ -461,9 +478,9 @@
   function renderCalcBox(it) {
     var c = C.compute(it), el = $('#calc-box'); if (!el) return;
     if (!c.retenu) { el.innerHTML = '<div><span>Priorité</span><b>' + prioBadge(c.priorite) + '</b></div><div><span>Risque initial</span><b>' + riskBadge(c.risqueInitial) + '</b></div><div><span>Risque actuel</span><b>' + riskBadge(c.risqueActuel) + '</b></div><div><span>Prévisionnel</span><b>' + riskBadge(c.risqueApres) + '</b></div>'; return; }
-    el.innerHTML = '<div><span>Écart</span><b>' + fmt(c.ecart) + '</b></div><div><span>Criticité</span><b>' + fmt(c.criticite) + '</b></div>' +
+    el.innerHTML = '<div><span>Niveau</span><b>' + stair(c.evalue ? it.niveau : null, it.cible, 'md') + '</b></div><div><span>Écart</span><b>' + fmt(c.ecart) + '</b></div><div><span>Criticité</span><b>' + fmt(c.criticite) + '</b></div>' +
       '<div><span>Priorité</span><b>' + prioBadge(c.priorite) + '</b></div><div><span>Délai</span><b>' + (c.delaiMois ? c.delaiMois + ' mois' : '—') + '</b></div>' +
-      '<div><span>Risque initial</span><b>' + riskBadge(c.risqueInitial) + '</b></div><div><span>Risque actuel</span><b>' + riskBadge(c.risqueActuel) + '</b></div><div><span>Après plan</span><b>' + riskBadge(c.risqueApres) + '</b></div>';
+      '<div><span>Risque initial</span><b>' + riskBadge(c.risqueInitial) + '</b></div><div><span>Risque actuel</span><b>' + riskBadge(c.risqueActuel) + '</b></div><div><span>Après le plan</span><b>' + riskBadge(c.risqueApres) + '</b></div>';
   }
   function closeDrawer() {
     var d = $('#drawer'); if (!d.classList.contains('open')) return;
@@ -496,16 +513,16 @@
       gantt = '<div class="gantt"><div class="g-row g-scale"><div class="g-label"></div><div class="g-track">' + months.map(function (mm) { return '<span style="left:' + mm.x + '%">' + esc(mm.l) + '</span>'; }).join('') + '</div></div>' +
         a.chantiers.filter(function (c) { return c.type !== 'recurrent' && isoDate(c.debut) && isoDate(c.fin); }).map(function (c) {
           var x = pos(c.debut), w = Math.max(1, pos(c.fin) - x);
-          return '<div class="g-row"><div class="g-label"><b>' + esc(c.titre) + '</b><small>' + esc(c.id) + ' · ' + (count[c.id] || 0) + ' point(s) · ' + esc(c.responsable || '') + '</small></div><div class="g-track">' + now +
-            '<div class="g-bar" style="left:' + x + '%;width:' + w + '%" title="' + esc(fmtDate(c.debut) + ' → ' + fmtDate(c.fin) + ' · ' + (c.avancement || 0) + ' %') + '"><i style="width:' + Math.max(0, Math.min(100, +c.avancement || 0)) + '%"></i><span>' + (c.avancement || 0) + ' %</span></div></div></div>';
+          return '<div class="g-row"><div class="g-label"><b>' + esc(c.titre) + '</b><small>' + (count[c.id] || 0) + ' points de contrôle' + (c.responsable ? ', ' + esc(c.responsable) : '') + '</small></div><div class="g-track">' + now +
+            '<div class="g-bar" style="left:' + x + '%;width:' + w + '%" title="' + esc('Du ' + fmtDate(c.debut) + ' au ' + fmtDate(c.fin) + ', avancement ' + (c.avancement || 0) + ' %') + '"><i style="width:' + Math.max(0, Math.min(100, +c.avancement || 0)) + '%"></i><span>' + (c.avancement || 0) + ' %</span></div></div></div>';
         }).join('') +
         a.chantiers.filter(function (c) { return c.type === 'recurrent'; }).map(function (c) {
           var marks = (c.mois && c.mois.length) ? c.mois.map(function (d) { return '<span class="g-dot" style="left:' + (pos(d) + monthW / 2) + '%" title="' + esc(fmtDate(d)) + '">●</span>'; }).join('')
             : (isoDate(c.debut) && isoDate(c.fin) ? '<div class="g-bar rec" style="left:' + pos(c.debut) + '%;width:' + Math.max(1, pos(c.fin) - pos(c.debut)) + '%"></div>' : '');
-          return '<div class="g-row"><div class="g-label"><b>' + esc(c.titre) + '</b><small>Activité récurrente · ' + esc(c.responsable || '') + '</small></div><div class="g-track">' + now + marks + '</div></div>';
+          return '<div class="g-row"><div class="g-label"><b>' + esc(c.titre) + '</b><small>Activité récurrente' + (c.responsable ? ', ' + esc(c.responsable) : '') + '</small></div><div class="g-track">' + now + marks + '</div></div>';
         }).join('') +
         a.jalons.filter(function (j) { return isoDate(j.date); }).map(function (j) {
-          return '<div class="g-row"><div class="g-label"><b>◆ ' + esc(j.id + ' · ' + j.titre) + '</b><small>Jalon · ' + esc(fmtDate(j.date)) + (j.chantiers ? ' · ' + esc(j.chantiers) : '') + '</small></div><div class="g-track">' + now + '<span class="g-milestone" style="left:' + pos(j.date) + '%" title="' + esc(j.criteres || j.titre) + '">◆</span></div></div>';
+          return '<div class="g-row"><div class="g-label"><b>◆ ' + esc(j.titre) + '</b><small>Jalon du ' + esc(fmtDate(j.date)) + (j.chantiers ? ', ' + esc(j.chantiers.toLowerCase()) : '') + '</small></div><div class="g-track">' + now + '<span class="g-milestone" style="left:' + pos(j.date) + '%" title="' + esc(j.criteres || j.titre) + '">◆</span></div></div>';
         }).join('') + '</div><p class="legend"><span class="lg-bar"></span> Chantier <span class="lg-dot">●</span> Activité récurrente <span class="lg-ms">◆</span> Jalon <span class="lg-now"></span> Aujourd\'hui</p>';
     }
     main.innerHTML = head('Plan d\'action', 'Chantiers, plan de déploiement, jalons et actions correctives triées par criticité.') +
@@ -513,7 +530,7 @@
       '<div class="card"><div class="card-head"><h2>Chantiers et activités récurrentes</h2><div class="row-actions"><button class="btn sm" data-act="add-chantier">Ajouter un chantier</button><button class="btn sm ghost" data-act="add-recurrent">Ajouter une activité récurrente</button></div></div>' +
       '<div class="table-wrap"><table class="table"><thead><tr><th>N°</th><th>Chantier</th><th>Responsable</th><th>Début</th><th>Fin</th><th>Avancement (%)</th><th>Statut</th><th></th></tr></thead><tbody>' +
       (a.chantiers.length ? a.chantiers.map(function (c, i) {
-        return '<tr><td class="mono">' + esc(c.id) + '</td><td><input class="full" data-bind="chantiers.' + i + '.titre" value="' + esc(c.titre) + '"><small class="muted block">' + (c.type === 'recurrent' ? 'Activité récurrente' : (count[c.id] || 0) + ' point(s) de contrôle' + (c.cout ? ' · coût ' + esc(c.cout) : '')) + '</small></td>' +
+        return '<tr><td class="mono">' + esc(c.id) + '</td><td><input class="full" data-bind="chantiers.' + i + '.titre" value="' + esc(c.titre) + '"><small class="muted block">' + (c.type === 'recurrent' ? 'Activité récurrente' : (count[c.id] || 0) + ' points de contrôle' + (c.cout ? ', coût ' + esc(c.cout).toLowerCase() : '')) + '</small></td>' +
           '<td><input data-bind="chantiers.' + i + '.responsable" value="' + esc(c.responsable) + '"></td>' +
           '<td><input type="date" data-bind="chantiers.' + i + '.debut" value="' + esc(c.debut) + '"></td><td><input type="date" data-bind="chantiers.' + i + '.fin" value="' + esc(c.fin) + '"></td>' +
           '<td><input type="number" min="0" max="100" step="5" data-bind="chantiers.' + i + '.avancement" data-num value="' + esc(c.avancement) + '" class="num"></td>' +
@@ -530,7 +547,7 @@
       '<div class="card"><h2>Actions correctives (' + actions.length + ')</h2><div class="table-wrap"><table class="table"><thead><tr><th>Réf.</th><th>Action corrective proposée</th><th>Priorité</th><th>Crit.</th><th>Responsable</th><th>Échéance</th><th>Chantier</th><th>Statut</th></tr></thead><tbody>' +
       (actions.length ? actions.map(function (r) {
         var it = r.it, late = isoDate(it.echeance) && it.echeance < today() && !C.estRealisee(it);
-        return '<tr class="clickable" data-act="open-item" data-id="' + esc(it.id) + '" tabindex="0"><td class="mono">' + esc(refLabel(it)) + '</td><td>' + (it.action ? esc(it.action) : '<span class="muted">À définir · ' + esc(it.titre) + '</span>') + '</td><td>' + prioBadge(r.c.priorite) + '</td><td>' + fmt(r.c.criticite) + '</td><td>' + esc(it.responsable || '—') + '</td><td' + (late ? ' class="late"' : '') + '>' + esc(isoDate(it.echeance) ? fmtDate(it.echeance) : (it.echeance || '—')) + '</td><td>' + esc(it.chantier || '—') + '</td><td>' + badge(C.estRealisee(it) ? 'Réalisée' : it.statutAction, 'b-s-' + slug(C.estRealisee(it) ? 'realise' : it.statutAction)) + '</td></tr>';
+        return '<tr class="clickable" data-act="open-item" data-id="' + esc(it.id) + '" tabindex="0"><td class="mono">' + esc(refLabel(it)) + '</td><td>' + (it.action ? esc(it.action) : '<span class="muted">Action à définir pour : ' + esc(it.titre) + '</span>') + '</td><td>' + prioBadge(r.c.priorite) + '</td><td>' + fmt(r.c.criticite) + '</td><td>' + esc(it.responsable || '—') + '</td><td' + (late ? ' class="late"' : '') + '>' + esc(isoDate(it.echeance) ? fmtDate(it.echeance) : (it.echeance || '—')) + '</td><td>' + esc(it.chantier || '—') + '</td><td>' + badge(C.estRealisee(it) ? 'Réalisée' : it.statutAction, 'b-s-' + slug(C.estRealisee(it) ? 'realise' : it.statutAction)) + '</td></tr>';
       }).join('') : '<tr><td colspan="8" class="muted center">Aucune action : tous les points évalués atteignent leur cible.</td></tr>') + '</tbody></table></div></div>';
   }
 
@@ -539,7 +556,7 @@
     var a = state.audit;
     var cites = {};
     a.items.forEach(function (it) { (it.preuves || []).forEach(function (p) { (cites[p] = cites[p] || []).push(it); }); });
-    main.innerHTML = head('Registre des preuves', a.preuves.length + ' preuve(s) · ' + a.preuves.filter(function (p) { return C.PREUVE_OK.indexOf(p.statut) >= 0; }).length + ' collectée(s) · points de contrôle qui les citent', '<button class="btn primary" data-act="add-preuve">Ajouter une preuve</button>') +
+    main.innerHTML = head('Registre des preuves', a.preuves.length + ' preuves, dont ' + a.preuves.filter(function (p) { return C.PREUVE_OK.indexOf(p.statut) >= 0; }).length + ' collectées. Chaque preuve renvoie aux points de contrôle qui la citent.', '<button class="btn primary" data-act="add-preuve">Ajouter une preuve</button>') +
       '<div class="card table-wrap"><table class="table"><thead><tr><th>ID</th><th>Type</th><th>Intitulé de la preuve</th><th>Source / auteur</th><th>Date de collecte</th><th>Statut</th><th>Ce que la preuve établit</th><th>Mesures concernées</th><th>Citée par</th><th></th></tr></thead><tbody>' +
       (a.preuves.length ? a.preuves.map(function (p, i) {
         return '<tr><td class="mono">' + esc(p.id) + '</td>' +
@@ -575,7 +592,7 @@
           '<td>' + (k.mode === 'auto' ? fmt(k.cible) : '<input type="number" step="any" data-bind="kpis.' + i + '.cible" data-num value="' + esc(k.cible) + '" class="num">') + ' ' + esc(k.unite) + '</td>' +
           '<td><div class="meter" title="' + fmt(at) + ' %"><i style="width:' + (at || 0) + '%" class="' + (at >= 100 ? 'ok' : at >= 60 ? 'mid' : 'low') + '"></i></div>' + fmt(at) + ' %</td>' +
           '<td>' + (k.mode === 'auto' ? '<span class="muted">automatique</span>' : '<form class="inline-form" data-kpi="' + esc(k.id) + '"><input type="date" name="date" value="' + today() + '" aria-label="Date"><input type="number" step="any" name="valeur" required class="num" aria-label="Valeur"><button class="btn sm">Ajouter</button></form>' +
-            '<small class="muted">' + a.releves.filter(function (r) { return r.kpi === k.id; }).length + ' mesure(s) · <button class="link" data-act="kpi-history" data-id="' + esc(k.id) + '">historique</button></small>') + '</td>' +
+            '<small class="muted">' + a.releves.filter(function (r) { return r.kpi === k.id; }).length + ' mesures. <button class="link" data-act="kpi-history" data-id="' + esc(k.id) + '">historique</button></small>') + '</td>' +
           '<td>' + (k.mode === 'auto' ? '' : '<button class="icon-btn" data-act="del-kpi" data-i="' + i + '" aria-label="Supprimer">✕</button>') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
@@ -591,7 +608,7 @@
     chart('ch-kpi-evo', {
       type: 'line',
       data: { labels: allDates.map(fmtDate), datasets: manual.map(function (k, i) {
-        return { label: k.id + ' · ' + k.nom, data: allDates.map(function (d) { var r = a.releves.filter(function (x) { return x.kpi === k.id && x.date === d; }); return r.length ? r[r.length - 1].valeur : null; }),
+        return { label: k.id + ' ' + k.nom, data: allDates.map(function (d) { var r = a.releves.filter(function (x) { return x.kpi === k.id && x.date === d; }); return r.length ? r[r.length - 1].valeur : null; }),
           borderColor: palette[i % palette.length], backgroundColor: palette[i % palette.length], spanGaps: true, tension: 0.2 };
       }) },
       options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
@@ -635,7 +652,7 @@
     var roles = {}; (cur.reponses || []).forEach(function (r) { roles[r.role] = (roles[r.role] || 0) + 1; });
     var link = campaignLink(cur);
     html += '<div class="tabs">' + a.questionnaires.map(function (c) { return '<button class="tab' + (c.id === cur.id ? ' active' : '') + '" data-act="sel-campaign" data-id="' + esc(c.id) + '">' + esc(c.titre) + '</button>'; }).join('') + '</div>' +
-      '<section class="grid2"><div class="card"><h2>' + esc(cur.titre) + '</h2><p class="muted">Créé le ' + esc(fmtDate(cur.createdAt)) + ' · ' + cur.questions.length + ' questions · ' + (cur.statut === 'clos' ? 'clos' : 'ouvert') + '</p>' +
+      '<section class="grid2"><div class="card"><h2>' + esc(cur.titre) + '</h2><p class="muted">' + cur.questions.length + ' questions, créé le ' + esc(fmtDate(cur.createdAt)) + '. ' + (cur.statut === 'clos' ? 'Clos.' : 'Ouvert aux réponses.') + '</p>' +
       (S.mode === 'server' && !cur.token ? '<p><button class="btn primary" data-act="publish-campaign">Publier sur le serveur</button></p>' :
         '<label>Lien à partager<div class="copy"><input readonly id="q-link" value="' + esc(link) + '"><button class="btn sm" data-act="copy-link">Copier</button><a class="btn sm ghost" href="' + esc(link) + '" target="_blank" rel="noopener">Ouvrir</a></div></label>') +
       '<div class="row-actions"><button class="btn" data-act="refresh-responses">Actualiser</button><button class="btn" data-act="import-responses">Importer des réponses (.json)</button><button class="btn ghost danger" data-act="del-campaign">Supprimer</button></div></div>' +
@@ -711,6 +728,10 @@
     'close-drawer': closeDrawer,
     'clear-filters': function () { state.filters = {}; render(); },
     'filter-heat': function (el) { go('matrice', { heat: el.dataset.g + 'x' + el.dataset.v }); },
+    'filter-dom': function (el) { go('matrice', { src: el.dataset.src, domaine: el.dataset.dom }); },
+    'filter-prio': function (el) { go('matrice', { priorite: el.dataset.p }); },
+    'filter-dict': function (el) { go('matrice', { dict: el.dataset.k }); },
+    'filter-meth': function (el) { go('matrice', { methode: el.dataset.m }); },
     'add-spec': function () {
       var a = state.audit, n = 1, id;
       do { id = 'SPEC-' + (n < 10 ? '0' : '') + n; n++; } while (item(id));
@@ -731,7 +752,7 @@
     'edit-chantier': function (el) {
       var i = +el.dataset.i, c = state.audit.chantiers[i]; if (!c) return;
       var b = function (k, label, rows) { return '<label>' + esc(label) + '<textarea data-bind="chantiers.' + i + '.' + k + '" rows="' + (rows || 2) + '">' + esc(c[k]) + '</textarea></label>'; };
-      modal(c.id + ' · ' + c.titre, '<div class="form">' + (c.type === 'recurrent'
+      modal(c.id + ' ' + c.titre, '<div class="form">' + (c.type === 'recurrent'
         ? '<label>Mois concernés (AAAA-MM, séparés par des virgules)<input data-mois="' + i + '" value="' + esc((c.mois || []).map(function (m) { return m.slice(0, 7); }).join(', ')) + '"></label>'
         : b('mesures', 'Mesures couvertes') + b('actions', 'Actions clés', 3) + '<div class="cols2"><label>Échéance<input data-bind="chantiers.' + i + '.echeance" value="' + esc(c.echeance) + '"></label><label>Coût estimé<select data-bind="chantiers.' + i + '.cout">' + opts([['', '—'], 'Faible', 'Moyen', 'Élevé'].concat(c.cout && ['Faible', 'Moyen', 'Élevé'].indexOf(c.cout) < 0 ? [c.cout] : []), c.cout || '') + '</select></label></div>' +
           b('indicateur', 'Indicateur de réussite') + b('justificatif', 'Justificatif / preuve de réalisation')) + '</div>',
@@ -763,7 +784,7 @@
     'kpi-history': function (el) {
       var a = state.audit, id = el.dataset.id;
       var rel = a.releves.map(function (r, i) { return { r: r, i: i }; }).filter(function (x) { return x.r.kpi === id; }).sort(function (x, y) { return String(x.r.date).localeCompare(String(y.r.date)); });
-      modal('Historique · ' + id, rel.length ? '<table class="table"><thead><tr><th>Date</th><th>Valeur</th><th></th></tr></thead><tbody>' + rel.map(function (x) { return '<tr><td>' + esc(fmtDate(x.r.date)) + '</td><td>' + fmt(x.r.valeur) + '</td><td><button class="icon-btn" data-act="del-releve" data-i="' + x.i + '" aria-label="Supprimer">✕</button></td></tr>'; }).join('') + '</tbody></table>' : '<p class="muted">Aucune mesure.</p>');
+      modal('Historique de ' + id, rel.length ? '<table class="table"><thead><tr><th>Date</th><th>Valeur</th><th></th></tr></thead><tbody>' + rel.map(function (x) { return '<tr><td>' + esc(fmtDate(x.r.date)) + '</td><td>' + fmt(x.r.valeur) + '</td><td><button class="icon-btn" data-act="del-releve" data-i="' + x.i + '" aria-label="Supprimer">✕</button></td></tr>'; }).join('') + '</tbody></table>' : '<p class="muted">Aucune mesure.</p>');
     },
     'del-releve': function (el) { state.audit.releves.splice(+el.dataset.i, 1); markDirty(); modalEl.close(); render(); },
     'new-campaign': function () {
@@ -837,9 +858,14 @@
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && $('#drawer').classList.contains('open')) { closeDrawer(); return; }
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr[data-act], td[data-act]')) { e.preventDefault(); e.target.click(); }
+    if (e.key === 'Escape' && document.body.classList.contains('nav-open')) { toggleNav(false); return; }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-act][tabindex]')) { e.preventDefault(); e.target.click(); }
   });
-  $('#scrim').addEventListener('click', closeDrawer);
+  function toggleNav(open) {
+    document.body.classList.toggle('nav-open', open);
+    $('#menu-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  $('#scrim').addEventListener('click', function () { if (document.body.classList.contains('nav-open')) toggleNav(false); else closeDrawer(); });
 
   function bindValue(el) {
     if (el.dataset.num !== undefined) return el.value === '' ? null : Number(el.value);
@@ -920,7 +946,7 @@
   $('#btn-json').addEventListener('click', function () { if (state.audit) exportJson(); });
   $('#btn-print').addEventListener('click', function () { if (state.audit) window.print(); });
   $('#btn-audits').addEventListener('click', function () { go('audits'); });
-  $('#menu-toggle').addEventListener('click', function () { document.body.classList.toggle('nav-open'); });
+  $('#menu-toggle').addEventListener('click', function () { toggleNav(!document.body.classList.contains('nav-open')); });
   $('#lb-close').addEventListener('click', function () { $('#local-banner').hidden = true; S.prefs.set('bannerClosed', true); });
   window.addEventListener('hashchange', route);
   window.addEventListener('beforeunload', function (e) { if ($('#save-state').dataset.state === 'pending') { save(); e.preventDefault(); e.returnValue = ''; } });

@@ -8,14 +8,20 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
   <a class="skip" href="#main">Aller au contenu</a>
-  <aside class="sidebar" aria-label="Navigation principale">
+  <header class="topbar">
+    <button class="topbar-menu" id="menu-toggle" aria-label="Ouvrir le menu" aria-controls="sidebar" aria-expanded="false"><span></span><span></span><span></span></button>
+    <div class="topbar-title"><b id="top-audit">SSI Audit</b><small id="top-view"></small></div>
+    <span id="top-save" class="save" data-state="ok" aria-hidden="true"></span>
+  </header>
+  <aside class="sidebar" id="sidebar" aria-label="Navigation principale">
     <div class="brand">
-      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7z" fill="#1E5631"/><path d="m11 16 3.5 3.5L21.5 12" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div><b>SSI Audit</b><span>Matrice de maturité</span></div>
+      <svg class="mark" viewBox="0 0 28 24" width="28" height="24" aria-hidden="true"><rect x="0" y="16" width="4" height="8" rx="1"/><rect x="6" y="12" width="4" height="12" rx="1"/><rect x="12" y="8" width="4" height="16" rx="1"/><rect x="18" y="4" width="4" height="20" rx="1" class="mark-off"/><rect x="24" y="0" width="4" height="24" rx="1" class="mark-off"/></svg>
+      <div><b>SSI Audit</b><span>Maturité de la sécurité</span></div>
     </div>
     <div class="current-audit">
       <span id="audit-name">—</span>
@@ -24,17 +30,15 @@
     </div>
     <nav id="nav"></nav>
     <div class="side-foot">
-      <button class="btn block" id="btn-xlsx" data-need-audit>Exporter Excel</button>
-      <button class="btn block" id="btn-json" data-need-audit>Sauvegarder (.json)</button>
-      <button class="btn block ghost" id="btn-print" data-need-audit>Imprimer / PDF</button>
-      <a class="btn block ghost" id="btn-logout" href="login.php?logout=1" hidden>Se déconnecter</a>
+      <button class="side-action" id="btn-xlsx" data-need-audit>Exporter la matrice Excel</button>
+      <button class="side-action" id="btn-json" data-need-audit>Sauvegarder en JSON</button>
+      <button class="side-action" id="btn-print" data-need-audit>Imprimer ou PDF</button>
+      <a class="side-action" id="btn-logout" href="login.php?logout=1" hidden>Se déconnecter</a>
       <div class="status"><span id="mode-badge" class="mode"></span><span id="save-state" class="save" data-state="ok">Enregistré</span></div>
     </div>
   </aside>
-  <button class="menu-toggle" id="menu-toggle" aria-label="Menu">☰</button>
   <div id="local-banner" class="local-banner" role="note" hidden>
-    <span class="lb-ico" aria-hidden="true">🔒</span>
-    <p><b>Mode démo : vos données restent dans votre navigateur.</b> Rien n'est envoyé sur Internet. Exportez vos audits en JSON pour les conserver (vider le cache les efface). N'utilisez pas de données réelles sensibles sur un poste partagé.</p>
+    <p><b>Vos données restent dans ce navigateur.</b> Rien n'est envoyé sur Internet. Sauvegardez vos audits en JSON pour les garder : vider le cache les efface. Évitez les données sensibles sur un poste partagé.</p>
     <button class="icon-btn" id="lb-close" aria-label="Masquer ce message">✕</button>
   </div>
   <main id="main" class="main" tabindex="-1"><p class="loading">Chargement…</p></main>
