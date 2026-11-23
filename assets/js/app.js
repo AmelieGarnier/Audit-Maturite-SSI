@@ -266,8 +266,8 @@
       '<div class="card chart-card"><h2>Maturité par critère DICT</h2><div class="chart"><canvas id="ch-dict"></canvas></div></div>' +
       '<div class="card chart-card"><h2>Méthodes d\'évaluation</h2><div class="chart"><canvas id="ch-meth"></canvas></div></div>' +
       '<div class="card chart-card"><h2>Trajectoire de maturité</h2><div class="chart"><canvas id="ch-traj"></canvas></div></div>' +
-      '<div class="card wide"><h2>Top 10 des écarts</h2>' + (s.top10.length ? '<table class="table"><thead><tr><th>Point</th><th>Intitulé</th><th>Écart</th><th>Criticité</th><th>Priorité</th></tr></thead><tbody>' +
-        s.top10.map(function (t) { return '<tr class="clickable" data-act="open-item" data-id="' + esc(t.id) + '"><td class="mono">' + esc(t.id) + '</td><td>' + esc(t.titre) + '</td><td>' + t.ecart + '</td><td>' + t.criticite + '</td><td>' + prioBadge(t.priorite) + '</td></tr>'; }).join('') + '</tbody></table>' : '<p class="muted">Aucun écart.</p>') + '</div>' +
+      '<div class="card wide"><h2>Top 10 des écarts</h2>' + (s.top10.length ? '<div class="table-wrap"><table class="table"><thead><tr><th>Point</th><th>Intitulé</th><th>Écart</th><th>Criticité</th><th>Priorité</th></tr></thead><tbody>' +
+        s.top10.map(function (t) { return '<tr class="clickable" data-act="open-item" data-id="' + esc(t.id) + '"><td class="mono">' + esc(t.id) + '</td><td>' + esc(t.titre) + '</td><td>' + t.ecart + '</td><td>' + t.criticite + '</td><td>' + prioBadge(t.priorite) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="muted">Aucun écart.</p>') + '</div>' +
       '</section>';
 
     var dom = s.parDomaine;
@@ -358,10 +358,10 @@
       '</fieldset></div>' +
       '<div class="card form wide"><h2>Points forts de l\'audit</h2><label>Un point fort par ligne, sous la forme « Intitulé : constat »<textarea data-bind="meta.pointsForts" rows="5">' + esc(m.pointsForts) + '</textarea></label></div>' +
       '<div class="card wide"><div class="card-head"><h2>Historique des versions</h2><button class="btn sm" data-act="add-version">Nouvelle version</button></div>' +
-      '<table class="table"><thead><tr><th>Date</th><th>Version</th><th>Auteur</th><th>Modification</th><th></th></tr></thead><tbody>' +
+      '<div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Version</th><th>Auteur</th><th>Modification</th><th></th></tr></thead><tbody>' +
       a.historique.map(function (h, i) {
         return '<tr><td><input type="date" data-bind="historique.' + i + '.date" value="' + esc(h.date) + '"></td><td><input data-bind="historique.' + i + '.version" value="' + esc(h.version) + '" size="5"></td><td><input data-bind="historique.' + i + '.auteur" value="' + esc(h.auteur) + '"></td><td><input data-bind="historique.' + i + '.commentaire" value="' + esc(h.commentaire) + '" class="full"></td><td><button class="icon-btn" data-act="del-row" data-list="historique" data-i="' + i + '" aria-label="Supprimer">✕</button></td></tr>';
-      }).join('') + '</tbody></table></div></section>';
+      }).join('') + '</tbody></table></div></div></section>';
   }
 
   // ---------- Vue : matrice ----------
@@ -712,7 +712,7 @@
     'clear-filters': function () { state.filters = {}; render(); },
     'filter-heat': function (el) { go('matrice', { heat: el.dataset.g + 'x' + el.dataset.v }); },
     'add-spec': function () {
-      var a = state.audit, n = a.items.filter(function (i) { return i.src === 'SPEC'; }).length + 1, id;
+      var a = state.audit, n = 1, id;
       do { id = 'SPEC-' + (n < 10 ? '0' : '') + n; n++; } while (item(id));
       var it = CAT.newItem({ id: id, src: 'SPEC', num: n - 1, domaine: 'Contrôles spécifiques', titre: 'Nouveau contrôle spécifique', question: '', attendus: '', methodeVerif: '', indicateur: '', gravite: 'Moyen', cible: 3, dict: {} });
       a.items.push(it); a.meta.referentiels.SPEC = true; markDirty(); render(); openDrawer(id);
