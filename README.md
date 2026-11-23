@@ -119,6 +119,7 @@ Les règles sont celles de l'onglet « Méthode » de la matrice d'origine.
 - **Calculs :** dans les onglets d'audit, l'écart, la criticité, la priorité et les risques sont de **vraies formules Excel**. Le classeur se recalcule si on le modifie.
 - **Saisie :** les cellules à remplir sont en jaune pâle, avec des listes déroulantes (retenue, fiabilité, règle écrite, niveaux, gravité, statut).
 - **Couleurs :** les priorités et les niveaux de risque sont colorés par une mise en forme conditionnelle.
+- **Graphiques :** l'onglet Synthèse contient les graphiques de la matrice d'origine (radar des domaines ANSSI, thèmes CIS, évolution du risque, logiciels), reliés aux cellules de leurs tableaux.
 - **Sécurité :** le fichier est généré dans le navigateur, sans dépendance, et l'injection de formules est neutralisée.
 
 ![Onglet Synthèse de l'export Excel](docs/captures/export-excel-synthese.png)
@@ -235,7 +236,6 @@ Les tests vérifient les règles de calcul. Ils comparent aussi l'outil à la **
 - Les intitulés ANSSI et CIS sont résumés ou reformulés en français : se reporter au [guide d'hygiène de l'ANSSI](https://cyber.gouv.fr/publications/guide-dhygiene-informatique) et au guide CIS pour le texte de référence.
 - Seule l'échelle de capacité de COBIT 2019 est utilisée, pas le référentiel complet.
 - En mode local, les données restent dans un seul navigateur : exportez-les régulièrement.
-- Les graphiques sont dans l'application ; l'export Excel contient les tableaux de synthèse, sans graphiques.
 
 ## Autrice et crédits
 

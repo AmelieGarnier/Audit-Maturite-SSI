@@ -316,16 +316,30 @@
       ['Priorités P1 (critiques)', function (x) { return x.P1; }, false, null], ['Priorités P2 (importantes)', function (x) { return x.P2; }, false, null],
       ['Priorités P3 (à planifier)', function (x) { return x.P3; }, false, null], ['Mesures au niveau cible (OK)', function (x) { return x.OK; }, false, null]]
       .forEach(function (r) { var v = both(A, K, r[1], r[2]); SY.push([c(r[0], ST.label), c(v[0], r[3] || ST.center), c(v[1], r[3] || ST.center), c(v[2], r[3] || ST.calc)]); });
+    // Graphiques natifs Excel, reliés aux cellules des tableaux (comme dans la matrice d'origine).
+    var charts = [];
+    var RED = 'C00000', GREEN_C = '1E5631', GREY = '7F7F7F', PEACH = 'F4B084';
+    function actualVsTarget(type, title, ds, headRow, size) {
+      var from = headRow + 1, to = headRow + ds.length;
+      charts.push({ type: type, title: title, min: 0, max: 5, majorUnit: 1, sectionRow: headRow - 2, size: size,
+        categories: { col: 0, from: from, to: to, values: ds.map(function (d) { return d.domaine; }) },
+        series: [{ name: 'Niveau actuel', nameCol: 2, nameRow: headRow, col: 2, values: ds.map(function (d) { return d.niveau; }), color: type === 'bar' && size === 'logiciels' ? PEACH : RED },
+          { name: 'Cible', nameCol: 3, nameRow: headRow, col: 3, values: ds.map(function (d) { return d.cible; }), color: GREEN_C }] });
+    }
     function domTable(src, title, headDom) {
       var ds = s.parDomaine.filter(function (d) { return d.src === src; });
-      if (!ds.length) return;
+      if (!ds.length) return null;
       SY.push([]);
       SY.push([c(title, ST.section)]);
       SY.push([headDom, 'Mesures retenues', 'Niveau actuel', 'Cible', 'Écart moyen', 'Règle écrite (Oui)', 'Nb P1', 'Nb P2'].map(function (h) { return c(h, ST.head); }));
+      var headRow = SY.length;
       ds.forEach(function (d) { SY.push([c(d.domaine, ST.label), c(d.retenus, ST.center), c(d.niveau, ST.dec), c(d.cible, ST.dec), c(d.ecartMoyen, ST.dec), c(d.regleOui, ST.center), c(d.P1, ST.center), c(d.P2, ST.center)]); });
+      return { ds: ds, headRow: headRow };
     }
-    domTable('ANSSI', 'Niveau de capacité par domaine : Guide d\'hygiène ANSSI', 'Domaine ANSSI');
-    domTable('CIS', 'Niveau de capacité par thème : Guide CIS Télétravail', 'Thème CIS');
+    var tA = domTable('ANSSI', 'Niveau de capacité par domaine : Guide d\'hygiène ANSSI', 'Domaine ANSSI');
+    if (tA) actualVsTarget('radar', 'Capacité ANSSI par domaine : actuel et cible (COBIT 0 à 5)', tA.ds, tA.headRow, 'radar');
+    var tC = domTable('CIS', 'Niveau de capacité par thème : Guide CIS Télétravail', 'Thème CIS');
+    if (tC) actualVsTarget('bar', 'Capacité CIS Télétravail par thème : actuel et cible (COBIT 0 à 5)', tC.ds, tC.headRow, 'cis');
     SY.push([]);
     SY.push([c('Suivi des actions correctives', ST.section)]);
     SY.push(['Périmètre', 'Actions retenues', 'Actions réalisées', 'Taux de réalisation', 'Avancement moyen (%)', 'Éléments non retenus'].map(function (h) { return c(h, ST.head); }));
@@ -340,6 +354,11 @@
     SY.push([c('Évolution du risque avant / après correctifs (tous les points de contrôle)', ST.section)]);
     SY.push(['Niveau de risque', 'Initial (avant correctifs)', 'Résiduel actuel (correctifs réalisés)', 'Résiduel prévisionnel (plan achevé)'].map(function (h) { return c(h, ST.head); }));
     var lvRow = SY.length + 1;
+    charts.push({ type: 'col', title: 'Nombre de points par niveau de risque : avant et après correctifs', min: 0, valTitle: 'Nombre de points', sectionRow: lvRow - 3, size: 'risque',
+      categories: { col: 0, from: lvRow, to: lvRow + 3, values: C.GRAVITES.slice() },
+      series: [['Initial (avant correctifs)', 1, 'initial', GREY], ['Résiduel actuel (correctifs réalisés)', 2, 'actuel', PEACH], ['Résiduel prévisionnel (plan achevé)', 3, 'apres', GREEN_C]].map(function (x) {
+        return { name: x[0], nameCol: x[1], nameRow: lvRow - 1, col: x[1], values: C.GRAVITES.map(function (g) { return s.classesRisque[x[2]][g] || 0; }), color: x[3] };
+      }) });
     C.GRAVITES.forEach(function (g) { SY.push([c(g, ST.label), c(s.classesRisque.initial[g] || 0, ST.center), c(s.classesRisque.actuel[g] || 0, ST.center), c(s.classesRisque.apres[g] || 0, ST.center)]); });
     SY.push([c('Total des points évalués', ST.label), c(s.risque.points, ST.calc), c(s.risque.points, ST.calc), c(s.risque.points, ST.calc)]);
     var rp = s.risque.points || 1;
@@ -348,7 +367,9 @@
       SY.push([]);
       SY.push([c('Maturité des logiciels métier (onglet « Audit logiciels »)', ST.section)]);
       SY.push(['Logiciel', 'Contrôles', 'Niveau actuel', 'Cible', 'Écart moyen', 'Nb P1', 'Nb P2'].map(function (h) { return c(h, ST.head); }));
-      s.parDomaine.filter(function (d) { return d.src === 'SPEC'; }).forEach(function (d) {
+      var dsL = s.parDomaine.filter(function (d) { return d.src === 'SPEC'; });
+      actualVsTarget('bar', 'Logiciels : niveau actuel et cible (COBIT 0 à 5)', dsL, SY.length, 'logiciels');
+      dsL.forEach(function (d) {
         SY.push([c(d.domaine, ST.label), c(d.retenus, ST.center), c(d.niveau, ST.dec), c(d.cible, ST.dec), c(d.ecartMoyen, ST.dec), c(d.P1, ST.center), c(d.P2, ST.center)]);
       });
     }
@@ -376,10 +397,19 @@
       SY.push([c(m, ST.label), c(v[0], ST.center), c(v[1], ST.center), c(v[2], ST.center), c(v[0] + v[1] + v[2], ST.calc)]);
     });
     SY.push([]);
-    SY.push([c('Les graphiques (radar par domaine, priorités, évolution du risque, cartographie, DICT, trajectoire) sont dans le tableau de bord de l\'application SSI Audit.', ST.note)]);
+    SY.push([c('Les graphiques, à droite des tableaux, sont reliés à leurs cellules. Le tableau de bord de l\'application propose aussi la cartographie des risques et les critères DICT.', ST.note)]);
+    // Placement des graphiques en colonne J, à hauteur de leur tableau : chaque graphique occupe
+    // une plage de cellules (colonnes J à S, nombre de lignes fixe), sans chevauchement.
+    var SPAN = { radar: 22, cis: 17, risque: 17, logiciels: 17 }, nextFree = 0;
+    charts.forEach(function (ch) {
+      var r = Math.max(ch.sectionRow, nextFree);
+      ch.anchor = { col: 9, row: r, to: { col: 19, row: r + SPAN[ch.size] } };
+      nextFree = r + SPAN[ch.size] + 1;
+      delete ch.sectionRow; delete ch.size;
+    });
     var mergesSy = ['A1:H1', 'A2:H2'];
     SY.forEach(function (row, i) { if (row && !Array.isArray(row) && row.h === 45) mergesSy.push('B' + (i + 1) + ':H' + (i + 1)); });
-    sheets.push({ name: 'Synthèse', cols: [50, 16, 16, 17, 14, 16, 10, 10], merges: mergesSy,
+    sheets.push({ name: 'Synthèse', cols: [50, 16, 16, 17, 14, 16, 10, 10], merges: mergesSy, charts: charts,
       conditional: [{ ref: 'A' + lvRow + ':A' + (lvRow + 3), rules: rules(LEVEL_FILLS) }], rows: SY });
 
     // ---------- Plan d'action ----------

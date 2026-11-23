@@ -19,14 +19,14 @@
   "acteurs": "J.-L. Fremont (Président, Direction); La comptable (référente conformité RGPD); le Chargé du SI; Le commercial; Les intérimaires commerciaux.",
   "enjeux": "Continuité de la chaîne de vente quotidienne (4h–13h) ; confidentialité des prix, factures et données producteurs ; preuves de conformité exigées par le Groupe Pomona ; mise en conformité RGPD ; migration vers un SaaS.",
   "documents": "GlobalGreen_PSSI ; GlobalGreen_Charte_informatique ; GlobalGreen_POSSI-01_Gestion-des-sauvegardes; GlobalGreen_POSSI-02_Codes_malveillants; GlobalGreen_POSSI-03_Gestion_des_biens; GlobalGreen_POSSI-04_BYOD; GlobalGreen_Glossaire.",
-  "pointsForts": "Cadre documentaire complet et récent : PSSI, charte informatique, 4 POSSI et glossaire validés en octobre 2026 : 50 des 59 mesures retenues sont déjà encadrées par une règle écrite.\nRôles de sécurité identifiés : Un Chargé du SI et une référente conformité (la comptable, déjà sensibilisée) sont désignés dans la PSSI.\nInformations sensibles connues : Classification en 4 niveaux, données critiques identifiées et cartographie des risques déjà réalisée.\nPratique de sauvegarde existante : Une sauvegarde quotidienne est déjà faite : l'habitude existe, il faut la sécuriser (POSSI-01, règle 3-2-1-1-0).\nTaille de l'entreprise : 6 personnes, un site, quelques postes : les mesures peuvent être déployées vite et à faible coût.\nLeviers externes favorables : Les exigences de Pomona motivent la Direction ; le projet SaaS, encore non signé, permet d'intégrer la sécurité dès le contrat.\nMéthode : Audit ANSSI",
+  "pointsForts": "Cadre documentaire complet et récent : PSSI, charte informatique, 4 POSSI et glossaire validés en octobre 2026 : 50 des 59 mesures retenues sont déjà encadrées par une règle écrite.\nRôles de sécurité identifiés : Un Chargé du SI et une référente conformité (la comptable, déjà sensibilisée) sont désignés dans la PSSI.\nInformations sensibles connues : Classification en 4 niveaux, données critiques identifiées et cartographie des risques déjà réalisée.\nPratique de sauvegarde existante : Une sauvegarde quotidienne est déjà faite : l'habitude existe, il faut la sécuriser (POSSI-01, règle 3-2-1-1-0).\nTaille de l'entreprise : 6 personnes, un site, quelques postes : les mesures peuvent être déployées vite et à faible coût.\nLeviers externes favorables : Les exigences de Pomona motivent la Direction ; le projet SaaS, encore non signé, permet d'intégrer la sécurité dès le contrat.",
   "referentiels": {
    "ANSSI": true,
    "CIS": true,
    "SPEC": true
   },
   "demo": true,
-  "demoVersion": 2,
+  "demoVersion": 3,
   "agregation": "mediane"
  },
  "items": [
